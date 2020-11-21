@@ -34,14 +34,14 @@
 .data
 displayAddress:	.word 0x10008000
 displayUnits: .word 32
-red: .word 0xff0000
-green: .word 0x00ff00
-blue: .word 0x008080
-yellow: .word 0xffff00
+backgroundColour: .word 0x008080		# teal
+platformColour: .word 0xC19A6B			# brown
+textColour: .word 0xffff00			# yellow
+playerColour: .word 0x00ff00			# green
 leftKey: .word 0x6A
 rightKey: .word 0x6B
 restartKey: .word 0x73
-platformSize: .word 8
+platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
@@ -51,18 +51,153 @@ platformC: .space 8
 
 main:
 	jal drawBackground
-	jal drawGameOver
+
+initializePlatform:
+	la $t0, platformA			# $t0 = A
+	li $t1, 10
+	sw $t1, 0($t0)				# A.x = 10
+	li $t1, 31
+	sw $t1, 4($t0)				# A.y = 31
+	
+	la $t0, platformB			# $t0 = B
+	li $t1, 19
+	sw $t1, 4($t0)				# B.y = 19
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push B onto stack
+	jal randomizeX				# randomize B.x
+	
+	la $t0, platformC			# $t0 = C
+	li $t1, 7
+	sw $t1, 4($t0)				# C.y = 7
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push B onto stack
+	jal randomizeX				# randomize B.x
+
+initializePlayer:
+	li $s0, 15				# player.x
+	li $s1, 24				# player.y
+	li $s2, 1				# direction (upwards = -1, downwards = 1)
+	
+drawDisplay:
+	la $t0, platformA			# $t0 = A
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push A onto stack
+	lw $t0, platformColour			# $t0 = colour
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push colour onto stack
+	jal drawPlatform			# draw platformA
+	
+	la $t0, platformB			# $t0 = B
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push B onto stack
+	lw $t0, platformColour			# $t0 = colour
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push colour onto stack
+	jal drawPlatform			# draw platformB
+	
+	la $t0, platformC			# $t0 = C
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push C onto stack
+	lw $t0, platformColour			# $t0 = colour
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push colour onto stack
+	jal drawPlatform			# draw platformC
+	
+	lw $t0, playerColour			# $t0 = colour
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push colour onto stack
+	jal drawPlayer				# draw player
 
 end:
 	li $v0, 10				# end program
 	syscall
+	
+# randomizeX(platform) -> randomizes the x-coordinate of a platform
+randomizeX:
+	lw $t0, 0($sp)				# pop platform address
+	addi $sp, $sp, 4
+	
+	lw $t1, displayUnits			# $t1 = displayUnits
+	lw $t2, platformSize			# $t2 = platformSize
+	sub $t3, $t1, $t2			# $t3 = displayUnits - platformSize (max x-value)
+	
+	li $v0, 42				# generates a random integer within a given range
+	li $a0, 0				# using only one random number generator
+	move $a1, $t3				# random integer ranges from 0 to displayUnits - platformSize (exclusive)
+	syscall
+	sw $a0, 0($t0)				# stores random integer as x-coordinate of platform
+	
+	jr $ra					# return
+
+# drawPlayer(colour) -> draws the player on the bitmap display
+drawPlayer:
+	lw $t0, 0($sp)				# pop colour
+	addi $sp, $sp, 4
+
+drawPlayerInit:
+	lw $t1, displayAddress			# $t1 = displayAddress
+	lw $t2, displayUnits			# $t2 = displayUnits
+	
+	# calculations for starting pixel
+	mult $s1, $t2
+	mflo $t3
+	add $t3, $t3, $s0
+	li $t4, 4
+	mult $t3, $t4
+	mflo $t3
+	add $t3, $t3, $t1			# $t3 = displayAddress + (y * displayUnits + x) * 4
+	
+drawPlayerBody:
+	sw $t0, 0($t3)
+	sw $t0, 4($t3)
+	sw $t0, 8($t3)
+	sw $t0, 128($t3)
+	sw $t0, 136($t3)
+	
+drawPlayerEnd:
+	jr $ra
+
+# drawPlatform(platform, colour) -> draws the platform on the bitmap display
+drawPlatform:
+	lw $t0, 0($sp)				# pop colour
+	addi $sp, $sp, 4
+	
+	lw $t1, 0($sp)				# pop platform address
+	addi $sp, $sp, 4
+	
+drawPlatformInit:
+	li $t2, 0				# i = 0
+	lw $t3, platformSize			# $t1 = platformSize
+	lw $t4, 0($t1)				# $t3 = x
+	lw $t5, 4($t1)				# $t4 = y
+	lw $t6, displayAddress			# $t6 = displayAddress
+	lw $t7, displayUnits			# $t7 = displayUnits
+	
+	# calculations for starting pixel
+	mult $t5, $t7
+	mflo $t8
+	add $t8, $t8, $t4
+	li $t9, 4
+	mult $t8, $t9
+	mflo $t4
+	add $t4, $t4, $t6			# $t3 = displayAddress + (y * displayUnits + x) * 4
+	
+drawPlatformLoop:				# if (i < platformSize)
+	bge $t2, $t3, drawPlatformEnd		# if (i >= platformSize) then exit loop
+	sw $t0, 0($t4)				# draw pixel at unit
+	addi $t4, $t4, 4			# unit++
+	addi $t2, $t2, 1			# i++
+	j drawPlatformLoop
+	
+drawPlatformEnd:
+	jr $ra
 	
 # drawBackground -> fills in every unit of the bitmap display with the colour blue
 drawBackground:
 	li $t0, 0				# i = 0
 	lw $t1, displayUnits			# $t1 = displayUnits
 	lw $t2, displayAddress			# $t2 = displayAddress
-	lw $t3, blue				# $t3 = blue
+	lw $t3, backgroundColour		# $t3 = backgroundColour
 	mult $t1, $t1				# lastUnit = displayUnits * displayUnits
 	mflo $t1
 	
@@ -79,7 +214,7 @@ drawBackgroundEnd:
 # drawGameOver -> draws the text game over on the screen
 drawGameOver:
 	lw $t0, displayAddress			# $t0 = displayAddress
-	lw $t1, yellow 				# $t1 = yellow
+	lw $t1, textColour 			# $t1 = textColour
 	
 	# $t2 = displayAddress + (y * displayUnits + x) * 4
 	
