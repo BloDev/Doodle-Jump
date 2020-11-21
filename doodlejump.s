@@ -38,6 +38,7 @@ backgroundColour: .word 0x008080		# teal
 platformColour: .word 0xC19A6B			# brown
 textColour: .word 0xffff00			# yellow
 playerColour: .word 0x00ff00			# green
+jumpHeight: .word 16
 leftKey: .word 0x6A
 rightKey: .word 0x6B
 restartKey: .word 0x73
@@ -50,9 +51,8 @@ platformC: .space 8
 .text
 
 main:
-	jal drawBackground
 
-initializePlatform:
+initializePlatforms:
 	la $t0, platformA			# $t0 = A
 	li $t1, 10
 	sw $t1, 0($t0)				# A.x = 10
@@ -77,46 +77,153 @@ initializePlayer:
 	li $s0, 15				# player.x
 	li $s1, 24				# player.y
 	li $s2, 1				# direction (upwards = -1, downwards = 1)
-	
+	li $s3, 0				# jumpCounter
+
 drawDisplay:
+	jal drawBackground			# draw background
+	jal drawPlayer				# draw player
+
+drawPlatforms:
 	la $t0, platformA			# $t0 = A
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push A onto stack
-	lw $t0, platformColour			# $t0 = colour
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push colour onto stack
 	jal drawPlatform			# draw platformA
 	
 	la $t0, platformB			# $t0 = B
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push B onto stack
-	lw $t0, platformColour			# $t0 = colour
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push colour onto stack
 	jal drawPlatform			# draw platformB
 	
 	la $t0, platformC			# $t0 = C
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push C onto stack
-	lw $t0, platformColour			# $t0 = colour
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push colour onto stack
 	jal drawPlatform			# draw platformC
+
+incrementPlayer:
+	add $s1, $s1, $s2
+
+checkDirection:
+	beq $s2, 1, endDirectionCheck		# if (direction is downwards) then skip condition
+	addi $s3, $s3, 1			# jump counter++
+	lw $t0, jumpHeight			# $t0 = jumpHeight
+	blt $s3, $t0, endDirectionCheck		# if (jumpCounter < jumpHeight) then skip condition
+	li $s2, 1				# set player direction downwards
+	li $s3, 0				# jumpCounter = 0
+
+endDirectionCheck:
+
+checkKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, endCheckKeypress		# if (no input detected) then draw
+
+getInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
 	
-	lw $t0, playerColour			# $t0 = colour
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push colour onto stack
-	jal drawPlayer				# draw player
+checkLeft:
+	lw $t1, leftKey				# $t1 = leftKey
+	bne $t0, $t1, checkRight		# if (input != leftKey) then checkRight
+
+moveLeft:
+	addi $s0, $s0, -1			# move 1 unit left
+	lw $t1, displayUnits			# load displayUnits
+	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
+	bltz $s0, wrapRight			# if (x < 0) then wrapRight
+	j endCheckKeypress			# jump to draw
+
+checkRight:
+	lw $t1, rightKey			# $t1 = rightKey
+	bne $t0, $t1, endCheckKeypress		# if (input != rightKey) then draw
+
+moveRight:
+	addi $s0, $s0, 1			# move 1 unit right
+	lw $t1, displayUnits			# load displayUnits
+	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
+	bltz $s0, wrapRight			# if (x < 0) then wrapRight
+	j endCheckKeypress			# jump to draw
+	
+wrapLeft:
+	li $s0, 0				# set player's x-coordinate to 0
+	j endCheckKeypress			# jump to draw
+
+wrapRight:
+	addi $t1, $t1, -1			# $t1 = displayUnits - 1
+	move $s0, $t1				# set player's x-coordinate to displayUnits - 1
+	j endCheckKeypress			# jump to draw
+
+endCheckKeypress:
+
+checkCollision:
+	beq $s2, -1, endCollisionCheck		# if (direction is upwards) then skip condition
+	la $t0, platformA			# $t0 = platformA
+	la $t1, platformB			# $t1 = platformB
+	la $t2, platformC			# $t2 = platformC
+	
+checkPlatformA:
+	lw $t3, 0($t0)				# $t3 = A.x (min-x)
+	lw $t4, platformSize			# $t4 = platformSize
+	add $t4, $t3, $t4			# $t4 = A.x + platformSize (max-x)
+	lw $t5, 4($t0)				# $t5 = A.y
+	addi $t5, $t5, -1			# $t5 = A.y - 2
+	blt $s0, $t3, checkPlatformB		# if (player.x < A.x) then checkPlatformB
+	bge $s0, $t4, checkPlatformB		# if (player.x >= A.x + platformSize) then checkPlatformB
+	bne $s1, $t5, checkPlatformB		# if (player.y != A.y - 1) then checkPlatformB
+	li $s2, -1				# change player direction to go upwards
+
+checkPlatformB:
+	lw $t3, 0($t1)				# $t3 = B.x (min-x)
+	lw $t4, platformSize			# $t4 = platformSize
+	add $t4, $t3, $t4			# $t4 = B.x + platformSize (max-x)
+	lw $t5, 4($t1)				# $t5 = B.y
+	addi $t5, $t5, -1			# $t5 = B.y - 2
+	blt $s0, $t3, checkPlatformC		# if (player.x < B.x) then checkPlatformC
+	bge $s0, $t4, checkPlatformC		# if (player.x >= B.x + platformSize) then checkPlatformC
+	bne $s1, $t5, checkPlatformC		# if (player.y != B.y - 1) then checkPlatformC
+	li $s2, -1				# change player direction to go upwards
+
+checkPlatformC:
+	lw $t3, 0($t2)				# $t3 = C.x (min-x)
+	lw $t4, platformSize			# $t4 = platformSize
+	add $t4, $t3, $t4			# $t4 = C.x + platformSize (max-x)
+	lw $t5, 4($t2)				# $t5 = C.y
+	addi $t5, $t5, -1			# $t5 = C.y - 2
+	blt $s0, $t3, endCollisionCheck		# if (player.x < C.x) then endCollisionCheck
+	bge $s0, $t4, endCollisionCheck		# if (player.x >= C.x + platformSize) then endCollisionCheck
+	bne $s1, $t5, endCollisionCheck		# if (player.y != C.y - 1) then endCollisionCheck
+	li $s2, -1				# change player direction to go upwards
+
+endCollisionCheck:
+
+sleep:
+	li $v0, 32
+	li $a0, 30
+	syscall					# sleep
+	
+checkIfPlayerLost:
+	lw $t0, displayUnits
+	bge $s1, $t0, end
+
+loopToDraw:
+	j drawDisplay				# loop
 
 end:
-	li $v0, 10				# end program
-	syscall
+	jal drawGameOver			# draw game over screen
+
+checkGameEndKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, checkGameEndKeypress	# if (no input detected) then keep checking for a keypress
+
+getGameEndInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
+
+checkGameEndRestart:
+	lw $t1, restartKey			# $t1 = restartKey
+	bne $t0, $t1, checkGameEndKeypress	# if (input != restartKey) then keep checking for a keypress
+	j initializePlatforms
 	
 # randomizeX(platform) -> randomizes the x-coordinate of a platform
 randomizeX:
-	lw $t0, 0($sp)				# pop platform address
+	lw $t0, 0($sp)				# $t0 = platformAddress
 	addi $sp, $sp, 4
-	
 	lw $t1, displayUnits			# $t1 = displayUnits
 	lw $t2, platformSize			# $t2 = platformSize
 	sub $t3, $t1, $t2			# $t3 = displayUnits - platformSize (max x-value)
@@ -131,10 +238,7 @@ randomizeX:
 
 # drawPlayer(colour) -> draws the player on the bitmap display
 drawPlayer:
-	lw $t0, 0($sp)				# pop colour
-	addi $sp, $sp, 4
-
-drawPlayerInit:
+	lw $t0, playerColour			# $t0 = playerColour
 	lw $t1, displayAddress			# $t1 = displayAddress
 	lw $t2, displayUnits			# $t2 = displayUnits
 	
@@ -147,29 +251,20 @@ drawPlayerInit:
 	mflo $t3
 	add $t3, $t3, $t1			# $t3 = displayAddress + (y * displayUnits + x) * 4
 	
-drawPlayerBody:
-	sw $t0, 0($t3)
-	sw $t0, 4($t3)
-	sw $t0, 8($t3)
-	sw $t0, 128($t3)
-	sw $t0, 136($t3)
+	sw $t0, 0($t3)				# draw pixel at unit
 	
 drawPlayerEnd:
 	jr $ra
 
 # drawPlatform(platform, colour) -> draws the platform on the bitmap display
 drawPlatform:
-	lw $t0, 0($sp)				# pop colour
+	lw $t0, platformColour			# $t0 = platformColour
+	lw $t1, 0($sp)				# $t1 = platformAddress
 	addi $sp, $sp, 4
-	
-	lw $t1, 0($sp)				# pop platform address
-	addi $sp, $sp, 4
-	
-drawPlatformInit:
-	li $t2, 0				# i = 0
-	lw $t3, platformSize			# $t1 = platformSize
-	lw $t4, 0($t1)				# $t3 = x
-	lw $t5, 4($t1)				# $t4 = y
+	li $t2, 0				# $t2 = 0
+	lw $t3, platformSize			# $t3 = platformSize
+	lw $t4, 0($t1)				# $t4 = x
+	lw $t5, 4($t1)				# $t5 = y
 	lw $t6, displayAddress			# $t6 = displayAddress
 	lw $t7, displayUnits			# $t7 = displayUnits
 	
@@ -180,29 +275,29 @@ drawPlatformInit:
 	li $t9, 4
 	mult $t8, $t9
 	mflo $t4
-	add $t4, $t4, $t6			# $t3 = displayAddress + (y * displayUnits + x) * 4
+	add $t4, $t4, $t6			# $t4 = displayAddress + (y * displayUnits + x) * 4
 	
 drawPlatformLoop:				# if (i < platformSize)
 	bge $t2, $t3, drawPlatformEnd		# if (i >= platformSize) then exit loop
 	sw $t0, 0($t4)				# draw pixel at unit
 	addi $t4, $t4, 4			# unit++
 	addi $t2, $t2, 1			# i++
-	j drawPlatformLoop
+	j drawPlatformLoop			# loop
 	
 drawPlatformEnd:
-	jr $ra
+	jr $ra					# return
 	
 # drawBackground -> fills in every unit of the bitmap display with the colour blue
 drawBackground:
-	li $t0, 0				# i = 0
+	li $t0, 0				# $t0 = 0
 	lw $t1, displayUnits			# $t1 = displayUnits
 	lw $t2, displayAddress			# $t2 = displayAddress
 	lw $t3, backgroundColour		# $t3 = backgroundColour
-	mult $t1, $t1				# lastUnit = displayUnits * displayUnits
+	mult $t1, $t1				# $t1 = lastUnit = displayUnits * displayUnits
 	mflo $t1
 	
-drawBackgroundLoop:				# while (i < endAddress)
-	bge $t0, $t1, drawBackgroundEnd		# if (i >= endAddress) then exit loop
+drawBackgroundLoop:				# while (i < lastUnit)
+	bge $t0, $t1, drawBackgroundEnd		# if (i >= lastUnit) then exit loop
 	sw $t3, 0($t2)				# colour unit at displayAddress
 	addi $t2, $t2, 4			# displayAddress++
 	addi $t0, $t0, 1			# i++
