@@ -38,7 +38,7 @@ backgroundColour: .word 0x008080		# teal
 platformColour: .word 0xC19A6B			# brown
 textColour: .word 0xffff00			# yellow
 playerColour: .word 0x00ff00			# green
-jumpHeight: .word 16
+jumpHeight: .word 18
 leftKey: .word 0x6A
 rightKey: .word 0x6B
 restartKey: .word 0x73
@@ -61,15 +61,15 @@ initializePlatforms:
 	sw $t1, 4($t0)				# A.y = 31
 	
 	la $t0, platformB			# $t0 = B
-	li $t1, 21
-	sw $t1, 4($t0)				# B.y = 21
+	li $t1, 20
+	sw $t1, 4($t0)				# B.y = 20
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push B onto stack
 	jal randomizeX				# randomize B.x
 	
 	la $t0, platformC			# $t0 = C
-	li $t1, 11
-	sw $t1, 4($t0)				# C.y = 11
+	li $t1, 9
+	sw $t1, 4($t0)				# C.y = 9
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push C onto stack
 	jal randomizeX				# randomize C.x
@@ -85,7 +85,7 @@ drawDisplay:
 	jal drawPlayer				# draw player
 	
 checkScrollScreen:
-	bge $s1, 14, endScrollScreenCheck
+	bgt $s1, 12, endScrollScreenCheck
 	beqz $s3, endScrollScreenCheck
 	
 redrawPlatforms:
@@ -105,7 +105,7 @@ redrawPlatforms:
 	sw $t3, 0($t1)
 	sw $t4, 4($t1)
 	
-	li $t3, 1
+	li $t3, -2
 	sw $t3, 4($t2)
 	
 	addi $sp, $sp, -4
@@ -116,11 +116,7 @@ scrollPlatformsInit:
 	li $s7, 0
 	
 scrollPlatforms:
-	bge $s7, 10, scrollPlatformsEnd
-	
-	jal drawBackground
-	jal drawPlayer
-	jal drawPlatforms
+	bgt $s7, 10, scrollPlatformsEnd
 	
 	la $t0, platformA
 	la $t1, platformB
@@ -141,7 +137,13 @@ scrollPlatforms:
 	
 	addi $s7, $s7, 1
 	
+	jal drawBackground
+	jal drawPlayer
+	jal drawPlatforms
+	
 	jal sleep
+	
+	jal checkKeypress
 	
 	j scrollPlatforms
 	
@@ -157,6 +159,9 @@ drawPlatformsOnScreen:
 incrementPlayer:
 	add $s1, $s1, $s2
 
+getUserInput:
+	jal checkKeypress
+
 checkDirection:
 	beq $s2, 1, endDirectionCheck		# if (direction is downwards) then skip condition
 	addi $s3, $s3, 1			# jump counter++
@@ -166,46 +171,6 @@ checkDirection:
 	li $s3, 0				# jumpCounter = 0
 
 endDirectionCheck:
-
-checkKeypress:
-	lw $t0, 0xffff0000			# obtain value to check if input is detected
-	bne $t0, 1, endCheckKeypress		# if (no input detected) then draw
-
-getInput:
-	lw $t0, 0xffff0004 			# obtain input stored in next byte
-	
-checkLeft:
-	lw $t1, leftKey				# $t1 = leftKey
-	bne $t0, $t1, checkRight		# if (input != leftKey) then checkRight
-
-moveLeft:
-	addi $s0, $s0, -1			# move 1 unit left
-	lw $t1, displayUnits			# load displayUnits
-	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
-	bltz $s0, wrapRight			# if (x < 0) then wrapRight
-	j endCheckKeypress			# jump to draw
-
-checkRight:
-	lw $t1, rightKey			# $t1 = rightKey
-	bne $t0, $t1, endCheckKeypress		# if (input != rightKey) then draw
-
-moveRight:
-	addi $s0, $s0, 1			# move 1 unit right
-	lw $t1, displayUnits			# load displayUnits
-	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
-	bltz $s0, wrapRight			# if (x < 0) then wrapRight
-	j endCheckKeypress			# jump to draw
-	
-wrapLeft:
-	li $s0, 0				# set player's x-coordinate to 0
-	j endCheckKeypress			# jump to draw
-
-wrapRight:
-	addi $t1, $t1, -1			# $t1 = displayUnits - 1
-	move $s0, $t1				# set player's x-coordinate to displayUnits - 1
-	j endCheckKeypress			# jump to draw
-
-endCheckKeypress:
 
 checkCollision:
 	beq $s2, -1, endCollisionCheck		# if (direction is upwards) then skip condition
@@ -280,6 +245,48 @@ sleep:
 	move $a0, $t0
 	syscall					# sleep
 	
+	jr $ra
+
+# checkKeypress -> checks for valid keypress for moving the player left or right
+checkKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, endCheckKeypress		# if (no input detected) then draw
+
+getInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
+	
+checkLeft:
+	lw $t1, leftKey				# $t1 = leftKey
+	bne $t0, $t1, checkRight		# if (input != leftKey) then checkRight
+
+moveLeft:
+	addi $s0, $s0, -1			# move 1 unit left
+	lw $t1, displayUnits			# load displayUnits
+	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
+	bltz $s0, wrapRight			# if (x < 0) then wrapRight
+	j endCheckKeypress			# jump to draw
+
+checkRight:
+	lw $t1, rightKey			# $t1 = rightKey
+	bne $t0, $t1, endCheckKeypress		# if (input != rightKey) then draw
+
+moveRight:
+	addi $s0, $s0, 1			# move 1 unit right
+	lw $t1, displayUnits			# load displayUnits
+	bge $s0, $t1, wrapLeft			# if (x >= displayUnits) then wrapLeft
+	bltz $s0, wrapRight			# if (x < 0) then wrapRight
+	j endCheckKeypress			# jump to draw
+	
+wrapLeft:
+	li $s0, 0				# set player's x-coordinate to 0
+	j endCheckKeypress			# jump to draw
+
+wrapRight:
+	addi $t1, $t1, -1			# $t1 = displayUnits - 1
+	move $s0, $t1				# set player's x-coordinate to displayUnits - 1
+	j endCheckKeypress			# jump to draw
+
+endCheckKeypress:
 	jr $ra
 
 # randomizeX(platform) -> randomizes the x-coordinate of a platform
