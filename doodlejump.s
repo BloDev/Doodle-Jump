@@ -46,6 +46,7 @@ platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
+sleepDelay: .word 30
 
 .globl main
 .text
@@ -60,18 +61,18 @@ initializePlatforms:
 	sw $t1, 4($t0)				# A.y = 31
 	
 	la $t0, platformB			# $t0 = B
-	li $t1, 19
-	sw $t1, 4($t0)				# B.y = 19
+	li $t1, 21
+	sw $t1, 4($t0)				# B.y = 21
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $t0, 0($sp)				# push B onto stack
 	jal randomizeX				# randomize B.x
 	
 	la $t0, platformC			# $t0 = C
-	li $t1, 7
-	sw $t1, 4($t0)				# C.y = 7
+	li $t1, 11
+	sw $t1, 4($t0)				# C.y = 11
 	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push B onto stack
-	jal randomizeX				# randomize B.x
+	sw $t0, 0($sp)				# push C onto stack
+	jal randomizeX				# randomize C.x
 
 initializePlayer:
 	li $s0, 15				# player.x
@@ -82,22 +83,76 @@ initializePlayer:
 drawDisplay:
 	jal drawBackground			# draw background
 	jal drawPlayer				# draw player
+	
+checkScrollScreen:
+	bge $s1, 14, endScrollScreenCheck
+	beqz $s3, endScrollScreenCheck
+	
+redrawPlatforms:
+	la $t0, platformA
+	la $t1, platformB
+	la $t2, platformC
+	
+	lw $t3, 0($t1)
+	lw $t4, 4($t1)
+	
+	sw $t3, 0($t0)
+	sw $t4, 4($t0)
+	
+	lw $t3, 0($t2)
+	lw $t4, 4($t2)
+	
+	sw $t3, 0($t1)
+	sw $t4, 4($t1)
+	
+	li $t3, 1
+	sw $t3, 4($t2)
+	
+	addi $sp, $sp, -4
+	sw $t2, 0($sp)
+	jal randomizeX
 
-drawPlatforms:
-	la $t0, platformA			# $t0 = A
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push A onto stack
-	jal drawPlatform			# draw platformA
+scrollPlatformsInit:
+	li $s7, 0
 	
-	la $t0, platformB			# $t0 = B
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push B onto stack
-	jal drawPlatform			# draw platformB
+scrollPlatforms:
+	bge $s7, 10, scrollPlatformsEnd
 	
-	la $t0, platformC			# $t0 = C
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push C onto stack
-	jal drawPlatform			# draw platformC
+	jal drawBackground
+	jal drawPlayer
+	jal drawPlatforms
+	
+	la $t0, platformA
+	la $t1, platformB
+	la $t2, platformC
+	
+	lw $t4, 4($t0)
+	lw $t5, 4($t1)
+	lw $t6, 4($t2)
+	
+	addi $t4, $t4, 1
+	sw $t4, 4($t0)
+	
+	addi $t5, $t5, 1
+	sw $t5, 4($t1)
+	
+	addi $t6, $t6, 1
+	sw $t6, 4($t2)
+	
+	addi $s7, $s7, 1
+	
+	jal sleep
+	
+	j scrollPlatforms
+	
+scrollPlatformsEnd:
+	li $s2, 1
+	li $s3, 0
+
+endScrollScreenCheck:
+
+drawPlatformsOnScreen:
+	jal drawPlatforms
 
 incrementPlayer:
 	add $s1, $s1, $s2
@@ -193,10 +248,8 @@ checkPlatformC:
 
 endCollisionCheck:
 
-sleep:
-	li $v0, 32
-	li $a0, 30
-	syscall					# sleep
+idle:
+	jal sleep
 	
 checkIfPlayerLost:
 	lw $t0, displayUnits
@@ -219,7 +272,16 @@ checkGameEndRestart:
 	lw $t1, restartKey			# $t1 = restartKey
 	bne $t0, $t1, checkGameEndKeypress	# if (input != restartKey) then keep checking for a keypress
 	j initializePlatforms
+
+# sleep -> pause
+sleep:
+	lw $t0, sleepDelay
+	li $v0, 32
+	move $a0, $t0
+	syscall					# sleep
 	
+	jr $ra
+
 # randomizeX(platform) -> randomizes the x-coordinate of a platform
 randomizeX:
 	lw $t0, 0($sp)				# $t0 = platformAddress
@@ -236,7 +298,32 @@ randomizeX:
 	
 	jr $ra					# return
 
-# drawPlayer(colour) -> draws the player on the bitmap display
+# drawPlatforms -> draws all the platforms on the screen
+drawPlatforms:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+
+	la $t0, platformA			# $t0 = A
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push A onto stack
+	jal drawPlatform			# draw platformA
+	
+	la $t0, platformB			# $t0 = B
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push B onto stack
+	jal drawPlatform			# draw platformB
+	
+	la $t0, platformC			# $t0 = C
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $t0, 0($sp)				# push C onto stack
+	jal drawPlatform			# draw platformC
+	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra					# return
+
+# drawPlayer -> draws the player on the bitmap display
 drawPlayer:
 	lw $t0, playerColour			# $t0 = playerColour
 	lw $t1, displayAddress			# $t1 = displayAddress
@@ -256,11 +343,11 @@ drawPlayer:
 drawPlayerEnd:
 	jr $ra
 
-# drawPlatform(platform, colour) -> draws the platform on the bitmap display
+# drawPlatform(platform) -> draws the platform on the bitmap display
 drawPlatform:
 	lw $t0, platformColour			# $t0 = platformColour
-	lw $t1, 0($sp)				# $t1 = platformAddress
-	addi $sp, $sp, 4
+	lw $t1, 0($sp)				# $t1 = platformAddress (pop from stack)
+	addi $sp, $sp, 4			# move stack pointer up
 	li $t2, 0				# $t2 = 0
 	lw $t3, platformSize			# $t3 = platformSize
 	lw $t4, 0($t1)				# $t4 = x
