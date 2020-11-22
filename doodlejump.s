@@ -46,7 +46,7 @@ platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
-sleepDelay: .word 200
+sleepDelay: .word 30
 
 .globl main
 .text
