@@ -38,7 +38,7 @@ backgroundColour: .word 0x008080		# teal
 platformColour: .word 0xC19A6B			# brown
 textColour: .word 0xffff00			# yellow
 playerColour: .word 0x00ff00			# green
-jumpHeight: .word 18
+jumpHeight: .word 16
 leftKey: .word 0x6A
 rightKey: .word 0x6B
 restartKey: .word 0x73
@@ -46,12 +46,18 @@ platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
-sleepDelay: .word 30
+sleepDelay: .word 500
 
 .globl main
 .text
 
+#####################################################################
+#####################################################################
+#####################################################################
+
 main:
+
+start:
 
 initializePlatforms:
 	la $t0, platformA			# $t0 = A
@@ -79,68 +85,81 @@ initializePlayer:
 	li $s1, 24				# player.y
 	li $s2, 1				# direction (upwards = -1, downwards = 1)
 	li $s3, 0				# jumpCounter
-	
-initializePlatformScroll:
 	li $s7, 0
 
+startOfGame:
+
 drawDisplay:
-	jal drawBackground			# draw background
-	jal drawPlayer				# draw player
-	jal drawPlatforms			# draw platforms
+	jal drawBackground
+	jal drawPlayer
+	jal drawPlatforms
 	
 idle:
 	jal sleep
 
-checkScrollDisplay:
-	bgt $s1, 12, getUserInput
-	beqz $s3, getUserInput
-	
-checkUpdatePlatform:
-	bgtz $s7, movePlatforms
-	jal createNewPlatforms
-
-movePlatforms:
-	jal scrollPlatforms
-	addi $s7, $s7, 1
-
-getUserInput:
-	jal checkKeypress
-	
-checkScrolling:
-	blt $s7, 11, checkUpdateScroll
+# --------------------------------------------------
+checkIfScrollIsPresent:
+	bne $s7, 11, startOfScroll
 	li $s2, 1
 	li $s3, 0
 	li $s7, 0
-	j updatePlayer
+	j movePlayer
 
-checkUpdateScroll:
-	beqz $s7, updatePlayer
-	j drawDisplay
+startOfScroll:
+	bgt $s1, 14, getUserInput
+	beqz $s3, getUserInput
+
+updateNewPlatforms:
+	bnez $s7, scroll
+	jal createNewPlatforms
 	
-updatePlayer:
+scroll:
+	jal scrollPlatforms
+	addi $s7, $s7, 1
+	
+getUserInput:
+	jal checkKeypress
+
+endOfScroll:
+	beqz $s7, movePlayer
+	j drawDisplay
+# --------------------------------------------------
+
+movePlayer:
 	add $s1, $s1, $s2
 
-checkDirection:
-	beq $s2, 1, playerCollisionCheck	# if (direction is downwards) then skip condition
-	addi $s3, $s3, 1			# jump counter++
-	lw $t0, jumpHeight			# $t0 = jumpHeight
-	blt $s3, $t0, playerCollisionCheck	# if (jumpCounter < jumpHeight) then skip condition
-	li $s2, 1				# set player direction downwards
-	li $s3, 0				# jumpCounter = 0
+updatePlayerJumpCounter:
+	jal updateJumpCounter
 
-playerCollisionCheck:
+checkIfPlayerCollided:
 	jal checkCollision
 
 checkIfPlayerLost:
 	lw $t0, displayUnits
-	bge $s1, $t0, end
+	bge $s1, $t0, end			# if player.y >= displayUnits then end game
 
-loopToDraw:
-	j drawDisplay				# loop
+loopGame:
+	j startOfGame				# loop
 
 end:
 	jal drawGameOver			# draw game over screen
+	jal checkGameEndKeypress
+	j start
+	
+#####################################################################
+#####################################################################
+#####################################################################
 
+# sleep -> pause
+sleep:
+	lw $t0, sleepDelay
+	li $v0, 32
+	move $a0, $t0
+	syscall					# sleep
+	
+	jr $ra
+
+# checkGameEndKeypress -> checks for valid keypress at the end of the game for restart
 checkGameEndKeypress:
 	lw $t0, 0xffff0000			# obtain value to check if input is detected
 	bne $t0, 1, checkGameEndKeypress	# if (no input detected) then keep checking for a keypress
@@ -151,16 +170,8 @@ getGameEndInput:
 checkGameEndRestart:
 	lw $t1, restartKey			# $t1 = restartKey
 	bne $t0, $t1, checkGameEndKeypress	# if (input != restartKey) then keep checking for a keypress
-	j initializePlatforms
-
-# sleep -> pause
-sleep:
-	lw $t0, sleepDelay
-	li $v0, 32
-	move $a0, $t0
-	syscall					# sleep
 	
-	jr $ra
+	jr $ra					# return
 
 # checkKeypress -> checks for valid keypress for moving the player left or right
 checkKeypress:
@@ -202,6 +213,18 @@ wrapRight:
 	j endCheckKeypress			# jump to exit
 
 endCheckKeypress:
+	jr $ra
+
+# updateJumpCounter -> increments the jumpCounter if the player is going upwards, and if at max jumping height, then switches player direction downwards
+updateJumpCounter:
+	beq $s2, 1, endJumpCounterUpdate	# if (direction is downwards) then skip condition
+	addi $s3, $s3, 1			# jumpCounter++
+	lw $t0, jumpHeight			# $t0 = jumpHeight
+	blt $s3, $t0, endJumpCounterUpdate	# if (jumpCounter < jumpHeight) then skip condition
+	li $s2, 1				# set player direction downwards
+	li $s3, 0				# jumpCounter = 0
+
+endJumpCounterUpdate:
 	jr $ra
 
 # checkCollision -> checks if there is any collision with the player and the platform
@@ -268,28 +291,28 @@ createNewPlatforms:
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $ra, 0($sp)				# push address
 	
-	la $t0, platformA
-	la $t1, platformB
-	la $t2, platformC
+	la $t0, platformA			# $t0 = platformA
+	la $t1, platformB			# $t0 = platformB
+	la $t2, platformC			# $t0 = platformC
 	
-	lw $t3, 0($t1)
+	lw $t3, 0($t1)				# load up platformB's (x, y)
 	lw $t4, 4($t1)
 	
-	sw $t3, 0($t0)
+	sw $t3, 0($t0)				# platformA = platformB
 	sw $t4, 4($t0)
 	
-	lw $t3, 0($t2)
+	lw $t3, 0($t2)				# load up platformC's (x, y)		
 	lw $t4, 4($t2)
 	
-	sw $t3, 0($t1)
+	sw $t3, 0($t1)				# platformB = platformC
 	sw $t4, 4($t1)
 	
 	li $t3, -2
-	sw $t3, 4($t2)
+	sw $t3, 4($t2)				# set platformC's y-value to -2
 	
 	addi $sp, $sp, -4
-	sw $t2, 0($sp)
-	jal randomizeX
+	sw $t2, 0($sp)				# push platformC
+	jal randomizeX				# randomize platformC's x-value
 	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
@@ -298,15 +321,15 @@ createNewPlatforms:
 
 # scrollPlatforms -> scrolls the platforms down by 1 unit
 scrollPlatforms:	
-	la $t0, platformA
-	la $t1, platformB
-	la $t2, platformC
+	la $t0, platformA			# $t0 = platformA
+	la $t1, platformB			# $t0 = platformB
+	la $t2, platformC			# $t0 = platformC
 	
-	lw $t4, 4($t0)
+	lw $t4, 4($t0)				# load all platform y-values
 	lw $t5, 4($t1)
 	lw $t6, 4($t2)
 	
-	addi $t4, $t4, 1
+	addi $t4, $t4, 1			# increment all platform y-values
 	sw $t4, 4($t0)
 	
 	addi $t5, $t5, 1
