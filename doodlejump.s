@@ -32,6 +32,49 @@
 #####################################################################
 
 .data
+
+#####################################################################
+# CHARACTERS
+charA: .word 0,	4, 8, 128, -1, 136, 256, 260, 264, 384, -1, 392, 512, -1, 520
+charB: .word 0, 4, -1, 128, -1, 136, 256, 260, -1, 384, -1, 392, 512, 516, -1
+charC: .word -1, 4, 8, 128, -1, -1, 256, -1, -1, 384, -1, -1, -1, 516, 520
+charD: .word 0, 4, -1, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, -1
+charE: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, 384, -1, -1, 512, 516, 520
+charF: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, 384, -1, -1, 512, -1, -1
+charG: .word -1, 4, 8, 128, -1, -1, 256, -1, 264, 384, -1, 392, -1, 516, 520
+charH: .word 0, -1, 8, 128, -1, 136, 256, 260, 264, 384, -1, 392, 512, -1, 520
+charI: .word 0, 4, 8, -1, 132, -1, -1, 260, -1, -1, 388, -1, 512, 516, 520
+charJ: .word -1, -1, 8, -1, -1, 136, -1, -1, 264, 384, -1, 392, 512, 516, 520
+charK: .word 0, -1, 8, 128, -1, 136, 256, 260, -1, 384, -1, 392, 512, -1, 520
+charL: .word 0, -1, -1, 128, -1, -1, 256, -1, -1, 384, -1, -1, 512, 516, 520
+charM: .word 0, -1, 8, 128, 132, 136, 256, -1, 264, 384, -1, 392, 512, -1, 520
+charN: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, -1, 520
+charO: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
+charP: .word 0, 4, 8, 128, -1, 136, 256, 260, 264, 384, -1, -1, 512, -1, -1
+charQ: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, 388, 392, -1, 516, -1
+charR: .word 0, 4, -1, 128, -1, 136, 256, 260, -1, 384, -1, 392, 512, -1, 520
+charS: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, -1, -1, 392, 512, 516, 520
+charT: .word 0, 4, 8, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
+charU: .word 0, -1, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
+charV: .word 0, -1, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, -1, 516, -1
+charW: .word 0, -1, 8, 128, -1, 136, 256, -1, 264, 384, 388, 392, 512, -1, 520
+charX: .word 0, -1, 8, 128, -1, 136, -1, 260, -1, 384, -1, 392, 512, -1, 520
+charY: .word 0, -1, 8, 128, -1, 136, 256, 260, 264, -1, 388, -1, -1, 516, -1
+charZ: .word 0, 4, 8, -1, -1, 136, -1, 260, -1, 384, -1, -1, 512, 516, 520
+one: .word 0, 4, -1, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
+two: .word 0, 4, 8, -1, -1, 136, 256, 260, 264, 384, -1, -1, 512, 516, 520
+three: .word 0, 4, 8, -1, -1, 136, 256, 260, 264, -1, -1, 392, 512, 516, 520
+four: .word 0, -1, 8, 128, -1, 136, 256, 260, 264, -1, -1, 392, -1, -1, 520
+five: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, -1, -1, 392, 512, 516, 520
+six: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, 384, -1, 392, 512, 516, 520
+seven: .word 0, 4, 8, 128, -1, 136, -1, -1, 264, -1, -1, 392, -1, -1, 520
+eight: .word 0, 4, 8, 128, -1, 136, 256, 260, 264, 384, -1, 392, 512, 516, 520
+nine: .word 0, 4, 8, 128, -1, 136, 256, 260, 264, -1, -1, 392, 512, 516, 520
+zero: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
+exclamation: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, -1, -1, -1, 516, -1
+question: .word 0, 4, 8, -1, -1, 136, -1, 260, 264, -1, -1, -1, -1, 516, -1
+#####################################################################
+
 displayAddress:	.word 0x10008000
 displayUnits: .word 32
 backgroundColour: .word 0x008080		# teal
@@ -62,22 +105,20 @@ start:
 initializePlatforms:
 	la $t0, platformA			# $t0 = A
 	li $t1, 10
-	sw $t1, 0($t0)				# A.x = 11
+	sw $t1, 0($t0)				# A.x = 10
 	li $t1, 31
 	sw $t1, 4($t0)				# A.y = 31
 	
 	la $t0, platformB			# $t0 = B
 	li $t1, 20
 	sw $t1, 4($t0)				# B.y = 20
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push B onto stack
+	move $a0, $t0				# pass B as argument
 	jal randomizeX				# randomize B.x
 	
 	la $t0, platformC			# $t0 = C
 	li $t1, 9
 	sw $t1, 4($t0)				# C.y = 9
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push C onto stack
+	move $a0, $t0				# pass C as argument
 	jal randomizeX				# randomize C.x
 
 initializePlayer:
@@ -85,7 +126,8 @@ initializePlayer:
 	li $s1, 24				# player.y
 	li $s2, 1				# direction (upwards = -1, downwards = 1)
 	li $s3, 0				# jumpCounter
-	li $s7, 0
+	li $s6, 0				# score
+	li $s7, 0				# platformScroll
 
 startOfGame:
 
@@ -93,6 +135,7 @@ drawDisplay:
 	jal drawBackground
 	jal drawPlayer
 	jal drawPlatforms
+	jal drawScore
 	
 idle:
 	jal sleep
@@ -110,10 +153,11 @@ startOfScroll:
 	beqz $s3, getUserInput
 
 updateNewPlatforms:
-	bnez $s7, scroll
+	bnez $s7, scrollScreen
+	addi $s6, $s6, 1
 	jal createNewPlatforms
 	
-scroll:
+scrollScreen:
 	jal scrollPlatforms
 	addi $s7, $s7, 1
 	
@@ -149,6 +193,102 @@ end:
 #####################################################################
 #####################################################################
 #####################################################################
+
+# drawScore -> displays the score
+drawScore:
+	li $t0, 10
+	div $s6, $t0
+	
+	mflo $t1				# first digit
+	mfhi $t8				# second digit
+	
+	li $t3, 132
+
+	bnez $t1, drawZero
+	move $t1, $t8
+	li $t9, -1
+
+drawZero:
+	bne $t1, 0, drawOne
+	la $t4, zero
+	
+drawOne:
+	bne $t1, 1, drawTwo
+	la $t4, one
+
+drawTwo:
+	bne $t1, 2, drawThree
+	la $t4, two
+
+drawThree:
+	bne $t1, 3, drawFour
+	la $t4, three
+
+drawFour:
+	bne $t1, 4, drawFive
+	la $t4, four
+
+drawFive:
+	bne $t1, 5, drawSix
+	la $t4, five
+
+drawSix:
+	bne $t1, 6, drawSeven
+	la $t4, six
+
+drawSeven:
+	bne $t1, 7, drawEight
+	la $t4, seven
+
+drawEight:
+	bne $t1, 8, drawNine
+	la $t4, eight
+
+drawNine:
+	bne $t1, 9, drawNumber
+	la $t4, nine
+	
+drawNumber:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+
+	move $a0, $t3
+	move $a1, $t4
+	
+	jal drawChar
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+checkForSecondNumber:
+	beq $t9, -1, endDrawScore
+	move $t1, $t8
+	li $t3, 148
+	li $t9, -1
+	j drawZero
+	
+endDrawScore:
+	jr $ra
+
+# drawChar(starting position, character) -> draws a character starting at the starting position (1D)
+drawChar:
+	lw $t0, textColour
+	lw $t1, displayAddress
+	add $t1, $t1, $a0
+	li $t2, 0
+	
+loopDrawChar:
+	bge $t2, 15, endDrawChar
+	lw $t3, 0($a1)
+	add $t4, $t1, $t3
+	addi $a1, $a1, 4
+	addi $t2, $t2, 1
+	beq $t3, -1, loopDrawChar
+	sw $t0, 0($t4)
+	j loopDrawChar
+
+endDrawChar:
+	jr $ra
 
 # sleep -> pause
 sleep:
@@ -272,8 +412,7 @@ endCollisionCheck:
 
 # randomizeX(platform) -> randomizes the x-coordinate of a platform
 randomizeX:
-	lw $t0, 0($sp)				# $t0 = platformAddress
-	addi $sp, $sp, 4
+	move $t0, $a0				# $t0 = platformAddress
 	lw $t1, displayUnits			# $t1 = displayUnits
 	lw $t2, platformSize			# $t2 = platformSize
 	sub $t3, $t1, $t2			# $t3 = displayUnits - platformSize (max x-value)
@@ -310,8 +449,7 @@ createNewPlatforms:
 	li $t3, -2
 	sw $t3, 4($t2)				# set platformC's y-value to -2
 	
-	addi $sp, $sp, -4
-	sw $t2, 0($sp)				# push platformC
+	move $a0, $t2				# pass platformC as argument
 	jal randomizeX				# randomize platformC's x-value
 	
 	lw $ra, 0($sp)				# pop address
@@ -346,18 +484,15 @@ drawPlatforms:
 	sw $ra, 0($sp)				# push address
 
 	la $t0, platformA			# $t0 = platformA
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push A onto stack
+	move $a0, $t0				# pass platformA as argument
 	jal drawPlatform			# draw platformA
 	
 	la $t0, platformB			# $t0 = platformB
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push B onto stack
+	move $a0, $t0				# pass platformB as argument
 	jal drawPlatform			# draw platformB
 	
 	la $t0, platformC			# $t0 = platformC
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $t0, 0($sp)				# push C onto stack
+	move $a0, $t0				# pass platformC as argument
 	jal drawPlatform			# draw platformC
 	
 	lw $ra, 0($sp)				# pop address
@@ -388,8 +523,7 @@ drawPlayerEnd:
 # drawPlatform(platform) -> draws the platform on the bitmap display
 drawPlatform:
 	lw $t0, platformColour			# $t0 = platformColour
-	lw $t1, 0($sp)				# $t1 = platformAddress (pop from stack)
-	addi $sp, $sp, 4			# move stack pointer up
+	move $t1, $a0				# $t1 = platformAddress
 	li $t2, 0				# $t2 = 0
 	lw $t3, platformSize			# $t3 = platformSize
 	lw $t4, 0($t1)				# $t4 = x
@@ -437,310 +571,42 @@ drawBackgroundEnd:
 
 # drawGameOver -> draws the text game over on the screen
 drawGameOver:
-	lw $t0, displayAddress			# $t0 = displayAddress
-	lw $t1, textColour 			# $t1 = textColour
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+
+	li $a0, 924
+	la $a1, charG
+	jal drawChar
 	
-	# $t2 = displayAddress + (y * displayUnits + x) * 4
+	li $a0, 944
+	la $a1, charA
+	jal drawChar
 	
-	# DISPLAYING G
-	# (7, 7)
-	addi $t2, $t0, 924
-	sw $t1, 0($t2)
-	# (8, 7)
-	addi $t2, $t0, 928
-	sw $t1, 0($t2)
-	# (9, 7)
-	addi $t2, $t0, 932
-	sw $t1, 0($t2)
-	# (7, 8)
-	addi $t2, $t0, 1052
-	sw $t1, 0($t2)
-	# (9, 8)
-	addi $t2, $t0, 1060
-	sw $t1, 0($t2)
-	# (7, 9)
-	addi $t2, $t0, 1180
-	sw $t1, 0($t2)
-	# (8, 9)
-	addi $t2, $t0, 1184
-	sw $t1, 0($t2)
-	# (9, 9)
-	addi $t2, $t0, 1188
-	sw $t1, 0($t2)
-	# (9, 10)
-	addi $t2, $t0, 1316
-	sw $t1, 0($t2)
-	# (7, 11)
-	addi $t2, $t0, 1436
-	sw $t1, 0($t2)
-	# (8, 11)
-	addi $t2, $t0, 1440
-	sw $t1, 0($t2)
-	# (9, 11)
-	addi $t2, $t0, 1444
-	sw $t1, 0($t2)
+	li $a0, 964
+	la $a1, charM
+	jal drawChar
 	
-	# DISPLAYING A
-	# (11, 7)
-	addi $t2, $t0, 940
-	sw $t1, 0($t2)
-	# (12, 7)
-	addi $t2, $t0, 944
-	sw $t1, 0($t2)
-	# (13, 7)
-	addi $t2, $t0, 948
-	sw $t1, 0($t2)
-	# (11, 8)
-	addi $t2, $t0, 1068
-	sw $t1, 0($t2)
-	# (13, 8)
-	addi $t2, $t0, 1076
-	sw $t1, 0($t2)
-	# (11, 9)
-	addi $t2, $t0, 1196
-	sw $t1, 0($t2)
-	# (12, 9)
-	addi $t2, $t0, 1200
-	sw $t1, 0($t2)
-	# (13, 9)
-	addi $t2, $t0, 1204
-	sw $t1, 0($t2)
-	# (11, 10)
-	addi $t2, $t0, 1324
-	sw $t1, 0($t2)
-	# (13, 10)
-	addi $t2, $t0, 1332
-	sw $t1, 0($t2)
-	# (11, 11)
-	addi $t2, $t0, 1452
-	sw $t1, 0($t2)
-	# (13, 11)
-	addi $t2, $t0, 1460
-	sw $t1, 0($t2)
+	li $a0, 984
+	la $a1, charE
+	jal drawChar
 	
-	# DISPLAYING M
-	# (15, 7)
-	addi $t2, $t0, 956
-	sw $t1, 0($t2)
-	# (16, 7)
-	addi $t2, $t0, 960
-	sw $t1, 0($t2)
-	# (18, 7)
-	addi $t2, $t0, 968
-	sw $t1, 0($t2)
-	# (19, 7)
-	addi $t2, $t0, 972
-	sw $t1, 0($t2)
-	# (15, 8)
-	addi $t2, $t0, 1084
-	sw $t1, 0($t2)
-	# (17, 8)
-	addi $t2, $t0, 1092
-	sw $t1, 0($t2)
-	# (19, 8)
-	addi $t2, $t0, 1100
-	sw $t1, 0($t2)
-	# (15, 9)
-	addi $t2, $t0, 1212
-	sw $t1, 0($t2)
-	# (19, 9)
-	addi $t2, $t0, 1228
-	sw $t1, 0($t2)
-	# (15, 9)
-	addi $t2, $t0, 1340
-	sw $t1, 0($t2)
-	# (19, 9)
-	addi $t2, $t0, 1356
-	sw $t1, 0($t2)
-	# (15, 10)
-	addi $t2, $t0, 1468
-	sw $t1, 0($t2)
-	# (19, 10)
-	addi $t2, $t0, 1484
-	sw $t1, 0($t2)
+	li $a0, 2588
+	la $a1, charO
+	jal drawChar
 	
-	# DISPLAYING M
-	# (21, 7)
-	addi $t2, $t0, 980
-	sw $t1, 0($t2)
-	# (22, 7)
-	addi $t2, $t0, 984
-	sw $t1, 0($t2)
-	# (23, 7)
-	addi $t2, $t0, 988
-	sw $t1, 0($t2)
-	# (24, 7)
-	addi $t2, $t0, 992
-	sw $t1, 0($t2)
-	# (21, 8)
-	addi $t2, $t0, 1108
-	sw $t1, 0($t2)
-	# (21, 9)
-	addi $t2, $t0, 1236
-	sw $t1, 0($t2)
-	# (22, 9)
-	addi $t2, $t0, 1240
-	sw $t1, 0($t2)
-	# (23, 9)
-	addi $t2, $t0, 1244
-	sw $t1, 0($t2)
-	# (24, 9)
-	addi $t2, $t0, 1248
-	sw $t1, 0($t2)
-	# (21, 10)
-	addi $t2, $t0, 1364
-	sw $t1, 0($t2)
-	# (21, 10)
-	addi $t2, $t0, 1492
-	sw $t1, 0($t2)
-	# (22, 10)
-	addi $t2, $t0, 1496
-	sw $t1, 0($t2)
-	# (23, 10)
-	addi $t2, $t0, 1500
-	sw $t1, 0($t2)
-	# (24, 10)
-	addi $t2, $t0, 1504
-	sw $t1, 0($t2)
+	li $a0, 2608
+	la $a1, charV
+	jal drawChar
 	
-	# DISPLAYING O
-	# (7, 20)
-	addi $t2, $t0, 2588
-	sw $t1, 0($t2)
-	# (8, 20)
-	addi $t2, $t0, 2592
-	sw $t1, 0($t2)
-	# (9, 20)
-	addi $t2, $t0, 2596
-	sw $t1, 0($t2)
-	# (7, 21)
-	addi $t2, $t0, 2716
-	sw $t1, 0($t2)
-	# (9, 21)
-	addi $t2, $t0, 2724
-	sw $t1, 0($t2)
-	# (7, 22)
-	addi $t2, $t0, 2844
-	sw $t1, 0($t2)
-	# (9, 22)
-	addi $t2, $t0, 2852
-	sw $t1, 0($t2)
-	# (7, 23)
-	addi $t2, $t0, 2972
-	sw $t1, 0($t2)
-	# (9, 23)
-	addi $t2, $t0, 2980
-	sw $t1, 0($t2)
-	# (7, 24)
-	addi $t2, $t0, 3100
-	sw $t1, 0($t2)
-	# (8, 24)
-	addi $t2, $t0, 3104
-	sw $t1, 0($t2)
-	# (9, 24)
-	addi $t2, $t0, 3108
-	sw $t1, 0($t2)
+	li $a0, 2628
+	la $a1, charE
+	jal drawChar
 	
-	# DISPLAYING V
-	# (11, 20)
-	addi $t2, $t0, 2604
-	sw $t1, 0($t2)
-	# (15, 20)
-	addi $t2, $t0, 2620
-	sw $t1, 0($t2)
-	# (11, 21)
-	addi $t2, $t0, 2732
-	sw $t1, 0($t2)
-	# (15, 21)
-	addi $t2, $t0, 2748
-	sw $t1, 0($t2)
-	# (11, 22)
-	addi $t2, $t0, 2860
-	sw $t1, 0($t2)
-	# (15, 22)
-	addi $t2, $t0, 2876
-	sw $t1, 0($t2)
-	# (12, 23)
-	addi $t2, $t0, 2992
-	sw $t1, 0($t2)
-	# (14, 23)
-	addi $t2, $t0, 3000
-	sw $t1, 0($t2)
-	# (13, 24)
-	addi $t2, $t0, 3124
-	sw $t1, 0($t2)
+	li $a0, 2648
+	la $a1, charR
+	jal drawChar
 	
-	# DISPLAYING E
-	# (17, 20)
-	addi $t2, $t0, 2628
-	sw $t1, 0($t2)
-	# (18, 20)
-	addi $t2, $t0, 2632
-	sw $t1, 0($t2)
-	# (19, 20)
-	addi $t2, $t0, 2636
-	sw $t1, 0($t2)
-	# (17, 21)
-	addi $t2, $t0, 2756
-	sw $t1, 0($t2)
-	# (17, 22)
-	addi $t2, $t0, 2884
-	sw $t1, 0($t2)
-	# (18, 22)
-	addi $t2, $t0, 2888
-	sw $t1, 0($t2)
-	# (19, 22)
-	addi $t2, $t0, 2892
-	sw $t1, 0($t2)
-	# (17, 23)
-	addi $t2, $t0, 3012
-	sw $t1, 0($t2)
-	# (17, 24)
-	addi $t2, $t0, 3140
-	sw $t1, 0($t2)
-	# (18, 24)
-	addi $t2, $t0, 3144
-	sw $t1, 0($t2)
-	# (19, 24)
-	addi $t2, $t0, 3148
-	sw $t1, 0($t2)
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
 	
-	# DISPLAYING R
-	# (21, 20)
-	addi $t2, $t0, 2644
-	sw $t1, 0($t2)
-	# (22, 20)
-	addi $t2, $t0, 2648
-	sw $t1, 0($t2)
-	# (23, 20)
-	addi $t2, $t0, 2652
-	sw $t1, 0($t2)
-	# (21, 21)
-	addi $t2, $t0, 2772
-	sw $t1, 0($t2)
-	# (24, 21)
-	addi $t2, $t0, 2784
-	sw $t1, 0($t2)
-	# (21, 22)
-	addi $t2, $t0, 2900
-	sw $t1, 0($t2)
-	# (22, 22)
-	addi $t2, $t0, 2904
-	sw $t1, 0($t2)
-	# (23, 22)
-	addi $t2, $t0, 2908
-	sw $t1, 0($t2)
-	# (21, 23)
-	addi $t2, $t0, 3028
-	sw $t1, 0($t2)
-	# (24, 23)
-	addi $t2, $t0, 3040
-	sw $t1, 0($t2)
-	# (21, 24)
-	addi $t2, $t0, 3156
-	sw $t1, 0($t2)
-	# (24, 24)
-	addi $t2, $t0, 3168
-	sw $t1, 0($t2)
-	
-	jr $ra					# return
+	jr $ra
