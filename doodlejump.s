@@ -74,6 +74,7 @@ zero: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
 exclamation: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, -1, -1, -1, 516, -1
 question: .word 0, 4, 8, -1, -1, 136, -1, 260, 264, -1, -1, -1, -1, 516, -1
 colon: .word -1, -1, -1, -1, 132, -1, -1, -1, -1, -1, 388, -1, -1, -1, -1
+bar: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
 #####################################################################
 
 # COLOURS
@@ -81,7 +82,8 @@ white: .word 0xffffff
 red: .word 0xff0000
 green: .word 0x00ff00
 blue: .word 0x0000ff
-yellow: 0xffff00
+yellow: .word 0xffff00
+orange: .word 0xffa500
 
 # OBJECT COLOURS
 backgroundColour: .word 0x008080		# teal
@@ -99,6 +101,7 @@ jumpHeight: .word 16
 # KEYS
 startKey: .word 0x20
 restartKey: .word 0x73
+pauseKey: .word 0x1B
 leftKey: .word 0x6A
 rightKey: .word 0x6B
 levelOneKey: .word 0x31
@@ -328,6 +331,21 @@ sleep:
 	syscall					# sleep
 	
 	jr $ra
+
+# checkGameResumeKeypress -> checks for valid keypress to resume
+checkGameResumeKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, checkGameResumeKeypress	# if (no input detected) then keep checking for a keypress
+
+getGameResumeInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
+
+checkGameResume:
+	lw $t1, pauseKey			# $t1 = pauseKey
+	bne $t0, $t1, checkGameResumeKeypress	# if (input != pauseKey) then keep checking for a keypress
+
+endCheckGameResumeKeypress:
+	jr $ra					# return
 	
 # checkGameStartKeypress -> checks for valid keypress at the start of the game
 checkGameStartKeypress:
@@ -402,6 +420,19 @@ checkKeypress:
 
 getInput:
 	lw $t0, 0xffff0004 			# obtain input stored in next byte
+
+checkPause:
+	lw $t1, pauseKey			# $t1 = pauseKey
+	bne $t0, $t1, checkLeft			# if (input != pauseKey) then checkLeft
+	
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	jal drawPauseScreen
+	jal checkGameResumeKeypress
+	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
 	
 checkLeft:
 	lw $t1, leftKey				# $t1 = leftKey
@@ -655,6 +686,47 @@ drawBackgroundLoop:				# while (i < lastUnit)
 endDrawBackground:
 	jr $ra					# return
 	
+# drawPauseScreen -> draws the pausing screen
+drawPauseScreen:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, orange
+	sw $t0, textColour
+	
+	li $a0, 1680
+	la $a1, charP
+	jal drawChar
+	
+	li $a0, 1696
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 1712
+	la $a1, charU
+	jal drawChar
+	
+	li $a0, 1728
+	la $a1, charS
+	jal drawChar
+	
+	li $a0, 1744
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 1760
+	la $a1, charD
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+
+endDrawPauseScreen:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+
 # drawStartScreen -> draws the starting screen
 drawStartScreen:
 	addi $sp, $sp, -4			# move stack pointer down
@@ -705,11 +777,11 @@ drawStartScreen:
 	
 	lw $t0, yellow
 	sw $t0, textColour
-	
+
+endDrawStartScreen:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
-	
-endDrawStartScreen:
+
 	jr $ra
 
 # drawLevelScreen -> draws the level screen
@@ -806,52 +878,58 @@ drawLevelScreen:
 	
 	lw $t0, yellow
 	sw $t0, textColour
-	
+
+endDrawLevelScreen:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
-endDrawLevelScreen:
 	jr $ra
 	
 # drawGameOver -> draws the text game over on the screen
 drawGameOver:
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $ra, 0($sp)				# push address
+	
+	lw $t0, orange
+	sw $t0, textColour
 
-	li $a0, 924
+	li $a0, 1180
 	la $a1, charG
 	jal drawChar
 	
-	li $a0, 944
+	li $a0, 1200
 	la $a1, charA
 	jal drawChar
 	
-	li $a0, 964
+	li $a0, 1220
 	la $a1, charM
 	jal drawChar
 	
-	li $a0, 984
+	li $a0, 1240
 	la $a1, charE
 	jal drawChar
 	
-	li $a0, 2588
+	li $a0, 2332
 	la $a1, charO
 	jal drawChar
 	
-	li $a0, 2608
+	li $a0, 2352
 	la $a1, charV
 	jal drawChar
 	
-	li $a0, 2628
+	li $a0, 2372
 	la $a1, charE
 	jal drawChar
 	
-	li $a0, 2648
+	li $a0, 2392
 	la $a1, charR
 	jal drawChar
 	
-	lw $ra, 0($sp)				# pop address
-	addi $sp, $sp, 4			# move stack pointer up
+	lw $t0, yellow
+	sw $t0, textColour
 	
 endDrawGameOver:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+
 	jr $ra
