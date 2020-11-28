@@ -53,7 +53,7 @@ charO: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
 charP: .word 0, 4, 8, 128, -1, 136, 256, 260, 264, 384, -1, -1, 512, -1, -1
 charQ: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, 388, 392, -1, 516, -1
 charR: .word 0, 4, -1, 128, -1, 136, 256, 260, -1, 384, -1, 392, 512, -1, 520
-charS: .word 0, 4, 8, 128, -1, -1, 256, 260, 264, -1, -1, 392, 512, 516, 520
+charS: .word -1, 4, 8, 128, -1, -1, -1, 260, -1, -1, -1, 392, 512, 516, -1
 charT: .word 0, 4, 8, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
 charU: .word 0, -1, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
 charV: .word 0, -1, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, -1, 516, -1
@@ -73,22 +73,46 @@ nine: .word 0, 4, 8, 128, -1, 136, 256, 260, 264, -1, -1, 392, 512, 516, 520
 zero: .word 0, 4, 8, 128, -1, 136, 256, -1, 264, 384, -1, 392, 512, 516, 520
 exclamation: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, -1, -1, -1, 516, -1
 question: .word 0, 4, 8, -1, -1, 136, -1, 260, 264, -1, -1, -1, -1, 516, -1
+colon: .word -1, -1, -1, -1, 132, -1, -1, -1, -1, -1, 388, -1, -1, -1, -1
 #####################################################################
 
-displayAddress:	.word 0x10008000
-displayUnits: .word 32
+# COLOURS
+white: .word 0xffffff
+red: .word 0xff0000
+green: .word 0x00ff00
+blue: .word 0x0000ff
+yellow: 0xffff00
+
+# OBJECT COLOURS
 backgroundColour: .word 0x008080		# teal
 platformColour: .word 0xC19A6B			# brown
 textColour: .word 0xffff00			# yellow
 playerColour: .word 0x00ff00			# green
+
+# SCREEN
+displayAddress:	.word 0x10008000
+displayUnits: .word 32
+
+# PLAYER
 jumpHeight: .word 16
+
+# KEYS
+startKey: .word 0x20
+restartKey: .word 0x73
 leftKey: .word 0x6A
 rightKey: .word 0x6B
-restartKey: .word 0x73
+levelOneKey: .word 0x31
+levelTwoKey: .word 0x32
+levelThreeKey: .word 0x33
+
+# PLATFORMS
 platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
+startPlatformX: .word 10
+
+# SLEEP DELAY
 sleepDelay: .word 30
 
 .globl main
@@ -100,12 +124,20 @@ sleepDelay: .word 30
 
 main:
 
-start:
+startScreen:
+	jal drawBackground
+	jal drawStartScreen
+	jal checkGameStartKeypress
+
+levelScreen:
+	jal drawBackground
+	jal drawLevelScreen
+	jal checkLevelKeypress
 
 initializePlatforms:
 	la $t0, platformA			# $t0 = A
-	li $t1, 10
-	sw $t1, 0($t0)				# A.x = 10
+	lw $t1, startPlatformX
+	sw $t1, 0($t0)				# A.x = startPlatformX
 	li $t1, 31
 	sw $t1, 4($t0)				# A.y = 31
 	
@@ -128,8 +160,6 @@ initializePlayer:
 	li $s3, 0				# jumpCounter
 	li $s6, 0				# score
 	li $s7, 0				# platformScroll
-
-startOfGame:
 
 drawDisplay:
 	jal drawBackground
@@ -180,15 +210,15 @@ checkIfPlayerCollided:
 
 checkIfPlayerLost:
 	lw $t0, displayUnits
-	bge $s1, $t0, end			# if player.y >= displayUnits then end game
+	bge $s1, $t0, endGame			# if player.y >= displayUnits then end game
 
 loopGame:
-	j startOfGame				# loop
+	j drawDisplay				# loop
 
-end:
+endGame:
 	jal drawGameOver			# draw game over screen
 	jal checkGameEndKeypress
-	j start
+	j startScreen
 	
 #####################################################################
 #####################################################################
@@ -298,6 +328,57 @@ sleep:
 	syscall					# sleep
 	
 	jr $ra
+	
+# checkGameStartKeypress -> checks for valid keypress at the start of the game
+checkGameStartKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, checkGameStartKeypress	# if (no input detected) then keep checking for a keypress
+
+getGameStartInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
+
+checkGameStart:
+	lw $t1, startKey			# $t1 = startKey
+	bne $t0, $t1, checkGameStartKeypress	# if (input != startKey) then keep checking for a keypress
+
+endCheckGameStartKeypress:
+	jr $ra					# return
+	
+# checkLevelKeypress -> checks for valid keypress at the start of the game for levels
+checkLevelKeypress:
+	lw $t0, 0xffff0000			# obtain value to check if input is detected
+	bne $t0, 1, checkLevelKeypress		# if (no input detected) then keep checking for a keypress
+
+getLevelInput:
+	lw $t0, 0xffff0004 			# obtain input stored in next byte
+
+checkLevelOne:
+	lw $t1, levelOneKey			# $t1 = levelOneKey
+	bne $t0, $t1, checkLevelTwo		# if (input != levelOneKey) then keep checking for a keypress
+	li $t2, 12
+	sw $t2, platformSize
+	j endCheckLevelKeypress
+	
+checkLevelTwo:
+	lw $t1, levelTwoKey			# $t1 = levelTwoKey
+	bne $t0, $t1, checkLevelThree		# if (input != levelTwoKey) then keep checking for a keypress
+	li $t2, 8
+	sw $t2, platformSize
+	li $t2, 12
+	sw $t2, startPlatformX
+	j endCheckLevelKeypress
+	
+checkLevelThree:
+	lw $t1, levelThreeKey			# $t1 = levelThreeKey
+	bne $t0, $t1, checkLevelKeypress	# if (input != levelThreeKey) then keep checking for a keypress
+	li $t2, 4
+	sw $t2, platformSize
+	li $t2, 14
+	sw $t2, startPlatformX
+	j endCheckLevelKeypress
+
+endCheckLevelKeypress:
+	jr $ra					# return
 
 # checkGameEndKeypress -> checks for valid keypress at the end of the game for restart
 checkGameEndKeypress:
@@ -310,7 +391,8 @@ getGameEndInput:
 checkGameEndRestart:
 	lw $t1, restartKey			# $t1 = restartKey
 	bne $t0, $t1, checkGameEndKeypress	# if (input != restartKey) then keep checking for a keypress
-	
+
+endCheckGameEndKeypress:
 	jr $ra					# return
 
 # checkKeypress -> checks for valid keypress for moving the player left or right
@@ -357,19 +439,19 @@ endCheckKeypress:
 
 # updateJumpCounter -> increments the jumpCounter if the player is going upwards, and if at max jumping height, then switches player direction downwards
 updateJumpCounter:
-	beq $s2, 1, endJumpCounterUpdate	# if (direction is downwards) then skip condition
+	beq $s2, 1, endUpdateJumpCounter	# if (direction is downwards) then skip condition
 	addi $s3, $s3, 1			# jumpCounter++
 	lw $t0, jumpHeight			# $t0 = jumpHeight
-	blt $s3, $t0, endJumpCounterUpdate	# if (jumpCounter < jumpHeight) then skip condition
+	blt $s3, $t0, endUpdateJumpCounter	# if (jumpCounter < jumpHeight) then skip condition
 	li $s2, 1				# set player direction downwards
 	li $s3, 0				# jumpCounter = 0
 
-endJumpCounterUpdate:
+endUpdateJumpCounter:
 	jr $ra
 
 # checkCollision -> checks if there is any collision with the player and the platform
 checkCollision:
-	beq $s2, -1, endCollisionCheck		# if (direction is upwards) then skip condition
+	beq $s2, -1, endCheckCollision		# if (direction is upwards) then skip condition
 	la $t0, platformA			# $t0 = platformA
 	la $t1, platformB			# $t1 = platformB
 	la $t2, platformC			# $t2 = platformC
@@ -402,12 +484,12 @@ checkPlatformC:
 	add $t4, $t3, $t4			# $t4 = C.x + platformSize (max-x)
 	lw $t5, 4($t2)				# $t5 = C.y
 	addi $t5, $t5, -1			# $t5 = C.y - 2
-	blt $s0, $t3, endCollisionCheck		# if (player.x < C.x) then endCollisionCheck
-	bge $s0, $t4, endCollisionCheck		# if (player.x >= C.x + platformSize) then endCollisionCheck
-	bne $s1, $t5, endCollisionCheck		# if (player.y != C.y - 1) then endCollisionCheck
+	blt $s0, $t3, endCheckCollision		# if (player.x < C.x) then endCollisionCheck
+	bge $s0, $t4, endCheckCollision		# if (player.x >= C.x + platformSize) then endCollisionCheck
+	bne $s1, $t5, endCheckCollision		# if (player.y != C.y - 1) then endCollisionCheck
 	li $s2, -1				# change player direction to go upwards
 	
-endCollisionCheck:
+endCheckCollision:
 	jr $ra
 
 # randomizeX(platform) -> randomizes the x-coordinate of a platform
@@ -423,6 +505,7 @@ randomizeX:
 	syscall
 	sw $a0, 0($t0)				# stores random integer as x-coordinate of platform
 	
+endRandomizeX:
 	jr $ra					# return
 
 # updateNewPlatforms -> updates the platforms where platformA = platformB and platformB = platformC and platformC is now randomized
@@ -455,6 +538,7 @@ createNewPlatforms:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
+endCreateNewPlatforms:
 	jr $ra
 
 # scrollPlatforms -> scrolls the platforms down by 1 unit
@@ -476,6 +560,7 @@ scrollPlatforms:
 	addi $t6, $t6, 1
 	sw $t6, 4($t2)
 	
+endScrollPlatforms:
 	jr $ra
 
 # drawPlatforms -> draws all the platforms on the screen
@@ -498,6 +583,7 @@ drawPlatforms:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
+endDrawPlatforms:
 	jr $ra					# return
 
 # drawPlayer -> draws the player on the bitmap display
@@ -517,7 +603,7 @@ drawPlayer:
 	
 	sw $t0, 0($t3)				# draw pixel at unit
 	
-drawPlayerEnd:
+endDrawPlayer:
 	jr $ra
 
 # drawPlatform(platform) -> draws the platform on the bitmap display
@@ -541,13 +627,13 @@ drawPlatform:
 	add $t4, $t4, $t6			# $t4 = displayAddress + (y * displayUnits + x) * 4
 	
 drawPlatformLoop:				# if (i < platformSize)
-	bge $t2, $t3, drawPlatformEnd		# if (i >= platformSize) then exit loop
+	bge $t2, $t3, endDrawPlatform		# if (i >= platformSize) then exit loop
 	sw $t0, 0($t4)				# draw pixel at unit
 	addi $t4, $t4, 4			# unit++
 	addi $t2, $t2, 1			# i++
 	j drawPlatformLoop			# loop
 	
-drawPlatformEnd:
+endDrawPlatform:
 	jr $ra					# return
 	
 # drawBackground -> fills in every unit of the bitmap display with the colour blue
@@ -560,15 +646,173 @@ drawBackground:
 	mflo $t1
 	
 drawBackgroundLoop:				# while (i < lastUnit)
-	bge $t0, $t1, drawBackgroundEnd		# if (i >= lastUnit) then exit loop
+	bge $t0, $t1, endDrawBackground		# if (i >= lastUnit) then exit loop
 	sw $t3, 0($t2)				# colour unit at displayAddress
 	addi $t2, $t2, 4			# displayAddress++
 	addi $t0, $t0, 1			# i++
 	j drawBackgroundLoop			# loop
 	
-drawBackgroundEnd:
+endDrawBackground:
 	jr $ra					# return
+	
+# drawStartScreen -> draws the starting screen
+drawStartScreen:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
 
+	li $a0, 528
+	la $a1, charD
+	jal drawChar
+	
+	li $a0, 544
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 560
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 576
+	la $a1, charD
+	jal drawChar
+	
+	li $a0, 592
+	la $a1, charL
+	jal drawChar
+	
+	li $a0, 608
+	la $a1, charE
+	jal drawChar
+	
+	lw $t0, green
+	sw $t0, textColour
+	
+	li $a0, 1424
+	la $a1, charJ
+	jal drawChar
+	
+	li $a0, 1440
+	la $a1, charU
+	jal drawChar
+	
+	li $a0, 1456
+	la $a1, charM
+	jal drawChar
+	
+	li $a0, 1472
+	la $a1, charP
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+endDrawStartScreen:
+	jr $ra
+
+# drawLevelScreen -> draws the level screen
+drawLevelScreen:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	li $a0, 528
+	la $a1, charL
+	jal drawChar
+	
+	li $a0, 544
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 560
+	la $a1, charV
+	jal drawChar
+	
+	li $a0, 576
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 592
+	la $a1, charL
+	jal drawChar
+	
+	li $a0, 608
+	la $a1, charS
+	jal drawChar
+	
+	lw $t0, green
+	sw $t0, textColour
+	
+	li $a0, 1424
+	la $a1, one
+	jal drawChar
+	
+	li $a0, 1440
+	la $a1, colon
+	jal drawChar
+	
+	li $a0, 1456
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 1472
+	la $a1, charZ
+	jal drawChar
+	
+	li $a0, 2192
+	la $a1, two
+	jal drawChar
+	
+	li $a0, 2208
+	la $a1, colon
+	jal drawChar
+	
+	li $a0, 2224
+	la $a1, charM
+	jal drawChar
+	
+	li $a0, 2240
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 2256
+	la $a1, charH
+	jal drawChar
+	
+	li $a0, 2960
+	la $a1, three
+	jal drawChar
+	
+	li $a0, 2976
+	la $a1, colon
+	jal drawChar
+	
+	li $a0, 2992
+	la $a1, charH
+	jal drawChar
+	
+	li $a0, 3008
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 3024
+	la $a1, charR
+	jal drawChar
+	
+	li $a0, 3040
+	la $a1, charD
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+endDrawLevelScreen:
+	jr $ra
+	
 # drawGameOver -> draws the text game over on the screen
 drawGameOver:
 	addi $sp, $sp, -4			# move stack pointer down
@@ -609,4 +853,5 @@ drawGameOver:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
+endDrawGameOver:
 	jr $ra
