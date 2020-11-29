@@ -425,6 +425,7 @@ checkPause:
 	lw $t1, pauseKey			# $t1 = pauseKey
 	bne $t0, $t1, checkLeft			# if (input != pauseKey) then checkLeft
 	
+pauseScreen:
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $ra, 0($sp)				# push address
 	
@@ -433,6 +434,7 @@ checkPause:
 	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
+	j endCheckKeypress
 	
 checkLeft:
 	lw $t1, leftKey				# $t1 = leftKey
@@ -920,35 +922,35 @@ drawGameOver:
 	lw $t0, orange
 	sw $t0, textColour
 
-	li $a0, 1180
+	li $a0, 1308
 	la $a1, charG
 	jal drawChar
 	
-	li $a0, 1200
+	li $a0, 1328
 	la $a1, charA
 	jal drawChar
 	
-	li $a0, 1220
+	li $a0, 1348
 	la $a1, charM
 	jal drawChar
 	
-	li $a0, 1240
+	li $a0, 1368
 	la $a1, charE
 	jal drawChar
 	
-	li $a0, 2332
+	li $a0, 2204
 	la $a1, charO
 	jal drawChar
 	
-	li $a0, 2352
+	li $a0, 2224
 	la $a1, charV
 	jal drawChar
 	
-	li $a0, 2372
+	li $a0, 2244
 	la $a1, charE
 	jal drawChar
 	
-	li $a0, 2392
+	li $a0, 2264
 	la $a1, charR
 	jal drawChar
 	
