@@ -99,7 +99,7 @@ displayUnits: .word 32
 jumpHeight: .word 16
 
 # KEYS
-startKey: .word 0x20
+startKey: .word 0x73
 restartKey: .word 0x73
 pauseKey: .word 0x1B
 leftKey: .word 0x6A
@@ -773,6 +773,33 @@ drawStartScreen:
 	
 	li $a0, 1472
 	la $a1, charP
+	jal drawChar
+	
+	lw $t0, orange
+	sw $t0, textColour
+	
+	li $a0, 2960
+	la $a1, charS
+	jal drawChar
+	
+	li $a0, 2976
+	la $a1, colon
+	jal drawChar
+	
+	li $a0, 2992
+	la $a1, charP
+	jal drawChar
+	
+	li $a0, 3008
+	la $a1, charL
+	jal drawChar
+	
+	li $a0, 3024
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 3040
+	la $a1, charY
 	jal drawChar
 	
 	lw $t0, yellow
