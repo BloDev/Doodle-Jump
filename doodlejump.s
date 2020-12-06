@@ -14,20 +14,28 @@
 #
 # Which milestone is reached in this submission?
 # (See the assignment handout for descriptions of the milestones)
-# - Milestone 1/2/3/4/5 (choose the one the applies)
+# - Milestone 1 complete: finished (a) and (b)
+# - Milestone 2 complete: finished (a) and (b)
+# - Milestone 3 complete: finished (a) and (b)
+# - Milestone 4 complete (at least two): finished two objectives (a) and (b)
+# - Milestone 5 not complete (at least three): finished only two objectives (d) and (e)
 #
 # Which approved additional features have been implemented?
 # (See the assignment handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. Added start / game over / pause screens with updated graphics (d)
+# 2. Added dynamic on-screen notifications (e)
 #
 # Link to video demonstration for final submission:
 # - (insert YouTube / MyMedia / other URL here).
 #
 # Any additional information that the TA needs to know:
-# - (write here, if any)
+# - Left Key: j
+# - Right Key: k
+# - Start/Restart Key: s
+# - Pause Key: escape
+# - Level One Key: 1
+# - Level Two Key: 2
+# - Level Three Key: 3
 #
 #####################################################################
 
