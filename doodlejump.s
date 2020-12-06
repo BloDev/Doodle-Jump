@@ -97,7 +97,7 @@ displayAddress:	.word 0x10008000
 displayUnits: .word 32
 
 # PLAYER
-jumpHeight: .word 11
+jumpHeight: .word 12
 
 # KEYS
 startKey: .word 0x73
@@ -214,7 +214,7 @@ checkIfScrollIsPresent:
 	j movePlayer
 
 startOfScroll:
-	bgt $s1, 10, getUserInput		# scroll only if player.y <= 10
+	bge $s1, 10, getUserInput		# scroll only if player.y < 10
 	beqz $s3, getUserInput			# player must not be at the peak of jump
 
 updateNewPlatforms:
@@ -712,8 +712,7 @@ drawPlatform:
 	mflo $t4
 	add $t4, $t4, $t6			# $t4 = displayAddress + (y * displayUnits + x) * 4
 	
-	move $t5, $t4				# copy address into $t5
-	move $t6, $t4				# copy address into $t6
+	move $t5, $t4				# copy address into $t5 for drawing platform support
 	
 drawPlatformLoop:				# if (i < platformSize)
 	bge $t2, $t3, drawPlatformSupportInit	# if (i >= platformSize) then exit loop
@@ -728,23 +727,11 @@ drawPlatformSupportInit:
 	addi $t0, $t0, 16
 
 drawPlatformSupportLoop:
-	bge $t2, $t3, drawPlatformSupportInit2	# if (i >= platformSize) then exit loop
+	bge $t2, $t3, endDrawPlatform		# if (i >= platformSize - 4) then exit loop
 	sw $t0, 136($t5)			# draw pixel at unit
 	addi $t5, $t5, 4			# unit++
 	addi $t2, $t2, 1			# i++
 	j drawPlatformSupportLoop		# loop
-	
-drawPlatformSupportInit2:
-	li $t2, 0
-	addi $t3, $t3, -4
-	addi $t0, $t0, 16
-
-drawPlatformSupportLoop2:
-	bge $t2, $t3, endDrawPlatform		# if (i >= platformSize) then exit loop
-	sw $t0, 272($t6)			# draw pixel at unit
-	addi $t6, $t6, 4			# unit++
-	addi $t2, $t2, 1			# i++
-	j drawPlatformSupportLoop2		# loop
 	
 endDrawPlatform:
 	jr $ra					# return
