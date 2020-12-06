@@ -81,9 +81,10 @@ bar: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
 white: .word 0xffffff
 red: .word 0xff0000
 green: .word 0x00ff00
-blue: .word 0x0000ff
+blue: .word 0x87ceeb
 yellow: .word 0xffff00
 orange: .word 0xffa500
+pink: .word 0xffc0cb
 
 # OBJECT COLOURS
 backgroundColour: .word 0x008080		# teal
@@ -96,7 +97,7 @@ displayAddress:	.word 0x10008000
 displayUnits: .word 32
 
 # PLAYER
-jumpHeight: .word 16
+jumpHeight: .word 12
 
 # KEYS
 startKey: .word 0x73
@@ -113,6 +114,7 @@ platformSize: .word 12
 platformA: .space 8
 platformB: .space 8
 platformC: .space 8
+platformD: .space 8
 startPlatformX: .word 10
 
 # SLEEP DELAY
@@ -145,24 +147,31 @@ initializePlatforms:
 	sw $t1, 4($t0)				# A.y = 31
 	
 	la $t0, platformB			# $t0 = B
-	li $t1, 20
-	sw $t1, 4($t0)				# B.y = 20
+	li $t1, 23
+	sw $t1, 4($t0)				# B.y = 23
 	move $a0, $t0				# pass B as argument
 	jal randomizeX				# randomize B.x
 	
 	la $t0, platformC			# $t0 = C
-	li $t1, 9
-	sw $t1, 4($t0)				# C.y = 9
+	li $t1, 15
+	sw $t1, 4($t0)				# C.y = 15
 	move $a0, $t0				# pass C as argument
 	jal randomizeX				# randomize C.x
+	
+	la $t0, platformD			# $t0 = D
+	li $t1, 7
+	sw $t1, 4($t0)				# D.y = 7
+	move $a0, $t0				# pass D as argument
+	jal randomizeX				# randomize D.x
 
 initializePlayer:
 	li $s0, 16				# player.x
 	li $s1, 24				# player.y
 	li $s2, 1				# direction (upwards = -1, downwards = 1)
 	li $s3, 0				# jumpCounter
+	li $s5, -1				# dynamic text number
 	li $s6, 0				# score
-	li $s7, 0				# platformScroll
+	li $s7, 0				# scrollCounter
 
 drawDisplay:
 	jal drawBackground
@@ -170,35 +179,58 @@ drawDisplay:
 	jal drawPlatforms
 	jal drawScore
 	
+checkIfDisplayOnScreenText:
+	li $t0, 10
+	div $s6, $t0
+	mfhi $t0				# $t0 = last digit of score
+	
+	beqz $t0, checkIfScoreIsNotZero		# if the last digit of score is not zero, then reset dynamic text number
+	li $s5, -1
+	j idle
+	
+checkIfScoreIsNotZero:
+	beqz $s6, idle				# if score == zero then skip
+	
+	bne $s5, -1, drawDynamicTextOnScreen	# if dynamic text number has not been generated
+	
+	li $v0, 42				# generates a random integer within a given range
+	li $a0, 0				# using only one random number generator
+	li $a1, 4				# random integer ranges from 0 to 3
+	syscall
+	move $s5, $a0
+	
+drawDynamicTextOnScreen:
+	jal drawDynamicText
+	
 idle:
 	jal sleep
 
 # --------------------------------------------------
 checkIfScrollIsPresent:
-	bne $s7, 11, startOfScroll
-	li $s2, 1
-	li $s3, 0
-	li $s7, 0
+	bne $s7, 8, startOfScroll		# if scrollCounter == 8 then
+	li $s2, 1				# reset player direction
+	li $s3, 0				# reset jumpCounter
+	li $s7, 0				# reset scrollCounter
 	j movePlayer
 
 startOfScroll:
-	bgt $s1, 14, getUserInput
-	beqz $s3, getUserInput
+	bgt $s1, 9, getUserInput		# scroll only if player.y < 10
+	beqz $s3, getUserInput			# player must not be at the peak of jump
 
 updateNewPlatforms:
-	bnez $s7, scrollScreen
+	bnez $s7, scrollScreen			# if scrollCounter == 0 then initialize platforms for scrolling
 	addi $s6, $s6, 1
 	jal createNewPlatforms
 	
 scrollScreen:
-	jal scrollPlatforms
+	jal scrollPlatforms			# scroll platforms
 	addi $s7, $s7, 1
 	
 getUserInput:
-	jal checkKeypress
+	jal checkKeypress			# checks for player keypress
 
 endOfScroll:
-	beqz $s7, movePlayer
+	beqz $s7, movePlayer			# if scrollCounter != 0 then loop back to start
 	j drawDisplay
 # --------------------------------------------------
 
@@ -209,11 +241,12 @@ updatePlayerJumpCounter:
 	jal updateJumpCounter
 
 checkIfPlayerCollided:
-	jal checkCollision
+	jal checkPlatformCollision
 
 checkIfPlayerLost:
 	lw $t0, displayUnits
-	bge $s1, $t0, endGame			# if player.y >= displayUnits then end game
+	addi $t1, $s1, 1
+	bge $t1, $t0, endGame			# if player.y + 1 >= displayUnits then end game
 
 loopGame:
 	j drawDisplay				# loop
@@ -302,18 +335,18 @@ endDrawScore:
 
 # drawChar(starting position, character) -> draws a character starting at the starting position (1D)
 drawChar:
-	lw $t0, textColour
+	lw $t0, textColour			# loads colour and displayAddress
 	lw $t1, displayAddress
-	add $t1, $t1, $a0
+	add $t1, $t1, $a0			# $t1 = textAddress + displayAddress
 	li $t2, 0
 	
 loopDrawChar:
-	bge $t2, 15, endDrawChar
+	bge $t2, 15, endDrawChar		# loops through all 15 offsets from textAddress
 	lw $t3, 0($a1)
 	add $t4, $t1, $t3
 	addi $a1, $a1, 4
 	addi $t2, $t2, 1
-	beq $t3, -1, loopDrawChar
+	beq $t3, -1, loopDrawChar		# if offset != -1, then draw at that unit
 	sw $t0, 0($t4)
 	j loopDrawChar
 
@@ -370,7 +403,7 @@ getLevelInput:
 checkLevelOne:
 	lw $t1, levelOneKey			# $t1 = levelOneKey
 	bne $t0, $t1, checkLevelTwo		# if (input != levelOneKey) then keep checking for a keypress
-	li $t2, 12
+	li $t2, 10
 	sw $t2, platformSize
 	j endCheckLevelKeypress
 	
@@ -386,7 +419,7 @@ checkLevelTwo:
 checkLevelThree:
 	lw $t1, levelThreeKey			# $t1 = levelThreeKey
 	bne $t0, $t1, checkLevelKeypress	# if (input != levelThreeKey) then keep checking for a keypress
-	li $t2, 4
+	li $t2, 6
 	sw $t2, platformSize
 	li $t2, 14
 	sw $t2, startPlatformX
@@ -479,44 +512,47 @@ updateJumpCounter:
 endUpdateJumpCounter:
 	jr $ra
 
-# checkCollision -> checks if there is any collision with the player and the platform
-checkCollision:
+# checkPlatformCollision -> checks if there is any collision with the player and the platform
+checkPlatformCollision:
 	beq $s2, -1, endCheckCollision		# if (direction is upwards) then skip condition
-	la $t0, platformA			# $t0 = platformA
-	la $t1, platformB			# $t1 = platformB
-	la $t2, platformC			# $t2 = platformC
+	
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
 	
 checkPlatformA:
-	lw $t3, 0($t0)				# $t3 = A.x (min-x)
-	lw $t4, platformSize			# $t4 = platformSize
-	add $t4, $t3, $t4			# $t4 = A.x + platformSize (max-x)
-	lw $t5, 4($t0)				# $t5 = A.y
-	addi $t5, $t5, -1			# $t5 = A.y - 2
-	blt $s0, $t3, checkPlatformB		# if (player.x < A.x) then checkPlatformB
-	bge $s0, $t4, checkPlatformB		# if (player.x >= A.x + platformSize) then checkPlatformB
-	bne $s1, $t5, checkPlatformB		# if (player.y != A.y - 1) then checkPlatformB
-	li $s2, -1				# change player direction to go upwards
+	la $a0, platformA
+	jal checkCollision
 
 checkPlatformB:
-	lw $t3, 0($t1)				# $t3 = B.x (min-x)
-	lw $t4, platformSize			# $t4 = platformSize
-	add $t4, $t3, $t4			# $t4 = B.x + platformSize (max-x)
-	lw $t5, 4($t1)				# $t5 = B.y
-	addi $t5, $t5, -1			# $t5 = B.y - 2
-	blt $s0, $t3, checkPlatformC		# if (player.x < B.x) then checkPlatformC
-	bge $s0, $t4, checkPlatformC		# if (player.x >= B.x + platformSize) then checkPlatformC
-	bne $s1, $t5, checkPlatformC		# if (player.y != B.y - 1) then checkPlatformC
-	li $s2, -1				# change player direction to go upwards
+	la $a0, platformB
+	jal checkCollision
 
 checkPlatformC:
-	lw $t3, 0($t2)				# $t3 = C.x (min-x)
-	lw $t4, platformSize			# $t4 = platformSize
-	add $t4, $t3, $t4			# $t4 = C.x + platformSize (max-x)
-	lw $t5, 4($t2)				# $t5 = C.y
-	addi $t5, $t5, -1			# $t5 = C.y - 2
-	blt $s0, $t3, endCheckCollision		# if (player.x < C.x) then endCollisionCheck
-	bge $s0, $t4, endCheckCollision		# if (player.x >= C.x + platformSize) then endCollisionCheck
-	bne $s1, $t5, endCheckCollision		# if (player.y != C.y - 1) then endCollisionCheck
+	la $a0, platformC
+	jal checkCollision
+
+checkPlatformD:
+	la $a0, platformD
+	jal checkCollision
+
+endCheckPlatformCollision:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# checkCollision(platform) -> checks if the player collides with platform
+checkCollision:
+	move $t0, $a0				# $t0 = platformAddress
+	lw $t1, 0($t0)				# $t1 = platform.x (min-x)
+	lw $t2, platformSize			# $t2 = platformSize
+	add $t2, $t2, $t1			# $t2 = platform.x + platformSize (max-x)
+	lw $t3, 4($t0)				# $t3 = platform.y
+	addi $t3, $t3, -2			# $t3 = platform.y - 2 (to compare with player height)
+	addi $t4, $s0, 2			# $t4 = player.x + 2 (right side of player)
+	blt $t4, $t1, endCheckCollision		# if (player.x + 2 < platform.x) then terminate
+	bge $s0, $t2, endCheckCollision		# if (player.x >= platform.x + platformSize) then terminate
+	bne $s1, $t3, endCheckCollision		# if (player.y != platform.y - 2) then terminate
 	li $s2, -1				# change player direction to go upwards
 	
 endCheckCollision:
@@ -544,26 +580,33 @@ createNewPlatforms:
 	sw $ra, 0($sp)				# push address
 	
 	la $t0, platformA			# $t0 = platformA
-	la $t1, platformB			# $t0 = platformB
-	la $t2, platformC			# $t0 = platformC
+	la $t1, platformB			# $t1 = platformB
+	la $t2, platformC			# $t2 = platformC
+	la $t3, platformD			# $t3 = platformC
 	
-	lw $t3, 0($t1)				# load up platformB's (x, y)
-	lw $t4, 4($t1)
+	lw $t4, 0($t1)				# load up platformB's (x, y)
+	lw $t5, 4($t1)
 	
-	sw $t3, 0($t0)				# platformA = platformB
-	sw $t4, 4($t0)
+	sw $t4, 0($t0)				# platformA = platformB
+	sw $t5, 4($t0)
 	
-	lw $t3, 0($t2)				# load up platformC's (x, y)		
-	lw $t4, 4($t2)
+	lw $t4, 0($t2)				# load up platformC's (x, y)		
+	lw $t5, 4($t2)
 	
-	sw $t3, 0($t1)				# platformB = platformC
-	sw $t4, 4($t1)
+	sw $t4, 0($t1)				# platformB = platformC
+	sw $t5, 4($t1)
 	
-	li $t3, -2
-	sw $t3, 4($t2)				# set platformC's y-value to -2
+	lw $t4, 0($t3)				# load up platformD's (x, y)		
+	lw $t5, 4($t3)
 	
-	move $a0, $t2				# pass platformC as argument
-	jal randomizeX				# randomize platformC's x-value
+	sw $t4, 0($t2)				# platformC = platformD
+	sw $t5, 4($t2)
+	
+	li $t4, -1
+	sw $t4, 4($t3)				# set platformD's y-value to -1
+	
+	move $a0, $t3				# pass platformD as argument
+	jal randomizeX				# randomize platformD's x-value
 	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
@@ -574,12 +617,14 @@ endCreateNewPlatforms:
 # scrollPlatforms -> scrolls the platforms down by 1 unit
 scrollPlatforms:	
 	la $t0, platformA			# $t0 = platformA
-	la $t1, platformB			# $t0 = platformB
-	la $t2, platformC			# $t0 = platformC
+	la $t1, platformB			# $t1 = platformB
+	la $t2, platformC			# $t2 = platformC
+	la $t3, platformD			# $t3 = platformC
 	
 	lw $t4, 4($t0)				# load all platform y-values
 	lw $t5, 4($t1)
 	lw $t6, 4($t2)
+	lw $t7, 4($t3)
 	
 	addi $t4, $t4, 1			# increment all platform y-values
 	sw $t4, 4($t0)
@@ -589,6 +634,9 @@ scrollPlatforms:
 	
 	addi $t6, $t6, 1
 	sw $t6, 4($t2)
+	
+	addi $t7, $t7, 1
+	sw $t7, 4($t3)
 	
 endScrollPlatforms:
 	jr $ra
@@ -609,6 +657,10 @@ drawPlatforms:
 	la $t0, platformC			# $t0 = platformC
 	move $a0, $t0				# pass platformC as argument
 	jal drawPlatform			# draw platformC
+	
+	la $t0, platformD			# $t0 = platformD
+	move $a0, $t0				# pass platformD as argument
+	jal drawPlatform			# draw platformD
 	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
@@ -632,6 +684,10 @@ drawPlayer:
 	add $t3, $t3, $t1			# $t3 = displayAddress + (y * displayUnits + x) * 4
 	
 	sw $t0, 0($t3)				# draw pixel at unit
+	sw $t0, 4($t3)
+	sw $t0, 8($t3)
+	sw $t0, 128($t3)
+	sw $t0, 136($t3)
 	
 endDrawPlayer:
 	jr $ra
@@ -685,6 +741,172 @@ drawBackgroundLoop:				# while (i < lastUnit)
 endDrawBackground:
 	jr $ra					# return
 	
+# drawDynamicText -> draws dynamic on-screen notifications
+drawDynamicText:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+checkDrawCool:
+	bne $s5, 0, checkDrawPog
+	jal drawCool
+	j endDrawDynamicText
+
+checkDrawPog:
+	bne $s5, 1, checkDrawWow
+	jal drawPog
+	j endDrawDynamicText
+
+checkDrawWow:
+	bne $s5, 2, checkDrawHot
+	jal drawWow
+	j endDrawDynamicText
+	
+checkDrawHot:
+	jal drawHot
+	j endDrawDynamicText
+
+endDrawDynamicText:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+
+	jr $ra
+
+# drawCool -> draws cool on the screen
+drawCool:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, blue
+	sw $t0, textColour
+	
+	li $a0, 132
+	la $a1, charC
+	jal drawChar
+	
+	li $a0, 148
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 164
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 180
+	la $a1, charL
+	jal drawChar
+	
+	li $a0, 196
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawCool:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawPog -> draws pog on the screen
+drawPog:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, pink
+	sw $t0, textColour
+	
+	li $a0, 132
+	la $a1, charP
+	jal drawChar
+	
+	li $a0, 148
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 164
+	la $a1, charG
+	jal drawChar
+	
+	li $a0, 180
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawPog:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawWow -> draws wow on the screen
+drawWow:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, white
+	sw $t0, textColour
+	
+	li $a0, 132
+	la $a1, charW
+	jal drawChar
+	
+	li $a0, 148
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 164
+	la $a1, charW
+	jal drawChar
+	
+	li $a0, 180
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawWow:	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawHot -> draws hot on the screen
+drawHot:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, red
+	sw $t0, textColour
+	
+	li $a0, 132
+	la $a1, charH
+	jal drawChar
+	
+	li $a0, 148
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 164
+	la $a1, charT
+	jal drawChar
+	
+	li $a0, 180
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawHot:	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+
 # drawPauseScreen -> draws the pausing screen
 drawPauseScreen:
 	addi $sp, $sp, -4			# move stack pointer down
