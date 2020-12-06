@@ -230,76 +230,73 @@ endGame:
 # drawScore -> displays the score
 drawScore:
 	li $t0, 10
-	div $s6, $t0
+	div $s6, $t0				# divide score by 10
 	
-	mflo $t1				# first digit
-	mfhi $t8				# second digit
+	li $t7, 240				# position of first digit
+
+drawScoreLoop:
+	mflo $t8				# upper digits of score
+	mfhi $t9				# first digit of score
 	
-	li $t3, 132
-
-	bnez $t1, drawZero
-	move $t1, $t8
-	li $t9, -1
-
 drawZero:
-	bne $t1, 0, drawOne
-	la $t4, zero
+	bne $t9, 0, drawOne
+	la $t1, zero
 	
 drawOne:
-	bne $t1, 1, drawTwo
-	la $t4, one
+	bne $t9, 1, drawTwo
+	la $t1, one
 
 drawTwo:
-	bne $t1, 2, drawThree
-	la $t4, two
+	bne $t9, 2, drawThree
+	la $t1, two
 
 drawThree:
-	bne $t1, 3, drawFour
-	la $t4, three
+	bne $t9, 3, drawFour
+	la $t1, three
 
 drawFour:
-	bne $t1, 4, drawFive
-	la $t4, four
+	bne $t9, 4, drawFive
+	la $t1, four
 
 drawFive:
-	bne $t1, 5, drawSix
-	la $t4, five
+	bne $t9, 5, drawSix
+	la $t1, five
 
 drawSix:
-	bne $t1, 6, drawSeven
-	la $t4, six
+	bne $t9, 6, drawSeven
+	la $t1, six
 
 drawSeven:
-	bne $t1, 7, drawEight
-	la $t4, seven
+	bne $t9, 7, drawEight
+	la $t1, seven
 
 drawEight:
-	bne $t1, 8, drawNine
-	la $t4, eight
+	bne $t9, 8, drawNine
+	la $t1, eight
 
 drawNine:
-	bne $t1, 9, drawNumber
-	la $t4, nine
+	bne $t9, 9, drawNumber
+	la $t1, nine
 	
 drawNumber:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 
-	move $a0, $t3
-	move $a1, $t4
+	move $a0, $t7
+	move $a1, $t1
 	
 	jal drawChar
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
-	
-checkForSecondNumber:
-	beq $t9, -1, endDrawScore
-	move $t1, $t8
-	li $t3, 148
-	li $t9, -1
-	j drawZero
-	
+
+loopDrawScore:
+	li $t0, 10
+	div $t8, $t0				# divide upper digits by 10
+
+	addi $t7, $t7, -16			# move digit to the left
+	bnez $t8, drawScoreLoop			# draw until quotient is 0
+
 endDrawScore:
 	jr $ra
 
