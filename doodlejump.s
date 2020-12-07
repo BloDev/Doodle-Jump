@@ -119,10 +119,10 @@ levelThreeKey: .word 0x33
 
 # PLATFORMS
 platformSize: .word 12
-platformA: .space 8
-platformB: .space 8
-platformC: .space 8
-platformD: .space 8
+platformA: .space 12
+platformB: .space 12
+platformC: .space 12
+platformD: .space 12
 startPlatformX: .word 10
 
 # SLEEP DELAY
@@ -153,27 +153,35 @@ initializePlatforms:
 	sw $t1, 0($t0)				# A.x = startPlatformX
 	li $t1, 31
 	sw $t1, 4($t0)				# A.y = 31
+	li $t1, 0
+	sw $t1, 8($t0)				# platform.type = 0
 	
 	la $t0, platformB			# $t0 = B
 	li $t1, 23
 	sw $t1, 4($t0)				# B.y = 23
 	move $a0, $t0				# pass B as argument
 	jal randomizeX				# randomize B.x
+	li $t1, 0
+	sw $t1, 8($t0)				# platform.type = 0
 	
 	la $t0, platformC			# $t0 = C
 	li $t1, 15
 	sw $t1, 4($t0)				# C.y = 15
 	move $a0, $t0				# pass C as argument
 	jal randomizeX				# randomize C.x
+	li $t1, 0
+	sw $t1, 8($t0)				# platform.type = 0
 	
 	la $t0, platformD			# $t0 = D
 	li $t1, 7
 	sw $t1, 4($t0)				# D.y = 7
 	move $a0, $t0				# pass D as argument
 	jal randomizeX				# randomize D.x
+	li $t1, 0
+	sw $t1, 8($t0)				# platform.type = 0
 
 initializePlayer:
-	li $s0, 16				# player.x
+	li $s0, 14				# player.x
 	li $s1, 24				# player.y
 	li $s2, 1				# direction (upwards = -1, downwards = 1)
 	li $s3, 0				# jumpCounter
@@ -184,6 +192,7 @@ initializePlayer:
 drawDisplay:
 	jal drawBackground
 	jal drawPlayer
+	jal updatePlatforms
 	jal drawPlatforms
 	jal drawScore
 	
@@ -203,7 +212,7 @@ checkIfScoreIsNotZero:
 	
 	li $v0, 42				# generates a random integer within a given range
 	li $a0, 0				# using only one random number generator
-	li $a1, 4				# random integer ranges from 0 to 3
+	li $a1, 4				# random integer ranges from 0 to 4 (exclusive)
 	syscall
 	move $s5, $a0
 	
@@ -267,6 +276,77 @@ endGame:
 #####################################################################
 #####################################################################
 #####################################################################
+
+# updatePlatforms -> updates the platforms if they move
+updatePlatforms:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+updatePlatformA:
+	la $a0, platformA
+	lw $t0, 8($a0)
+	beq $t0, 2, updatePlatformB
+	beq $t0, -2, updatePlatformB
+	beqz $t0, updatePlatformB
+	jal movePlatform
+
+updatePlatformB:
+	la $a0, platformB
+	lw $t0, 8($a0)
+	beq $t0, 2, updatePlatformC
+	beq $t0, -2, updatePlatformC
+	beqz $t0, updatePlatformC
+	jal movePlatform
+
+updatePlatformC:
+	la $a0, platformC
+	lw $t0, 8($a0)
+	beq $t0, 2, updatePlatformD
+	beq $t0, -2, updatePlatformD
+	beqz $t0, updatePlatformD
+	jal movePlatform
+
+updatePlatformD:
+	la $a0, platformD
+	lw $t0, 8($a0)
+	beq $t0, 2, endUpdatePlatforms
+	beq $t0, -2, endUpdatePlatforms
+	beqz $t0, endUpdatePlatforms
+	jal movePlatform
+
+endUpdatePlatforms:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+
+# movePlatform -> moves the platform
+movePlatform:
+	move $t0, $a0				# $t0 = platformAddress
+	lw $t1, 0($t0)				# $t1 = platform.x (min-x)
+	lw $t2, platformSize			# $t2 = platformSize
+	add $t2, $t2, $t1			# $t2 = platform.x + platformSize (max-x exclusive)
+	
+checkPlatformLeft:				# check platform collision on left
+	bnez $t1, checkPlatformRight
+	li $t3, 1
+	sw $t3, 8($t0)
+	j incrementPlatform
+	
+checkPlatformRight:				# check platform collision on right
+	lw $t4, displayUnits
+	bne $t2, $t4, incrementPlatform
+	li $t3, -1
+	sw $t3, 8($t0)
+	j incrementPlatform
+
+incrementPlatform:				# increment platform
+	lw $t3, 8($t0)
+	add $t1, $t1, $t3
+	sw $t1, 0($t0)
+	
+endMovePlatform:
+	jr $ra
 
 # drawScore -> displays the score
 drawScore:
@@ -411,25 +491,25 @@ getLevelInput:
 checkLevelOne:
 	lw $t1, levelOneKey			# $t1 = levelOneKey
 	bne $t0, $t1, checkLevelTwo		# if (input != levelOneKey) then keep checking for a keypress
-	li $t2, 10
+	li $t2, 12
 	sw $t2, platformSize
 	j endCheckLevelKeypress
 	
 checkLevelTwo:
 	lw $t1, levelTwoKey			# $t1 = levelTwoKey
 	bne $t0, $t1, checkLevelThree		# if (input != levelTwoKey) then keep checking for a keypress
-	li $t2, 8
+	li $t2, 10
 	sw $t2, platformSize
-	li $t2, 12
+	li $t2, 10
 	sw $t2, startPlatformX
 	j endCheckLevelKeypress
 	
 checkLevelThree:
 	lw $t1, levelThreeKey			# $t1 = levelThreeKey
 	bne $t0, $t1, checkLevelKeypress	# if (input != levelThreeKey) then keep checking for a keypress
-	li $t2, 6
+	li $t2, 8
 	sw $t2, platformSize
-	li $t2, 14
+	li $t2, 12
 	sw $t2, startPlatformX
 	j endCheckLevelKeypress
 
@@ -554,7 +634,7 @@ checkCollision:
 	move $t0, $a0				# $t0 = platformAddress
 	lw $t1, 0($t0)				# $t1 = platform.x (min-x)
 	lw $t2, platformSize			# $t2 = platformSize
-	add $t2, $t2, $t1			# $t2 = platform.x + platformSize (max-x)
+	add $t2, $t2, $t1			# $t2 = platform.x + platformSize (max-x exclusive)
 	lw $t3, 4($t0)				# $t3 = platform.y
 	addi $t3, $t3, -2			# $t3 = platform.y - 2 (to compare with player height)
 	move $t4, $s0				# $t4 = player.x (min player.x)
@@ -577,12 +657,28 @@ checkMinPlayerX:
 	blt $t4, $t1, checkMaxPlayerX
 	bge $t4, $t2, checkMaxPlayerX
 	li $s2, -1				# change player direction to go upwards
+	
+	lw $t6, 8($t0)
+	bne $t6, 2, endCheckCollision
+	li $t7, -2
+	sw $t7, 8($t0)
+	li $t8, -9999
+	sw $t8, 4($t0)
+	
 	j endCheckCollision
 	
 checkMaxPlayerX:
 	blt $t5, $t1, endCheckCollision
 	bge $t5, $t2, endCheckCollision
 	li $s2, -1				# change player direction to go upwards
+	
+	lw $t6, 8($t0)
+	bne $t6, 2, endCheckCollision
+	li $t7, -2
+	sw $t7, 8($t0)
+	li $t8, -9999
+	sw $t8, 4($t0)
+	
 	j endCheckCollision
 	
 endCheckCollision:
@@ -603,6 +699,20 @@ randomizeX:
 	
 endRandomizeX:
 	jr $ra					# return
+	
+# randomizeType(platform) -> randomizes the type of a platform
+randomizeType:
+	move $t0, $a0				# $t0 = platformAddress
+	
+	li $v0, 42				# generates a random integer within a given range
+	li $a0, 0				# using only one random number generator
+	li $t1, 3
+	move $a1, $t1				# random integer ranges from 0 to 3 (exclusive)
+	syscall
+	sw $a0, 8($t0)				# stores random integer as type (0, 1, 2)
+	
+endRandomizeType:
+	jr $ra					# return
 
 # updateNewPlatforms -> updates the platforms where platformA = platformB and platformB = platformC and platformC is now randomized
 createNewPlatforms:
@@ -616,27 +726,37 @@ createNewPlatforms:
 	
 	lw $t4, 0($t1)				# load up platformB's (x, y)
 	lw $t5, 4($t1)
+	lw $t6, 8($t1)
 	
 	sw $t4, 0($t0)				# platformA = platformB
 	sw $t5, 4($t0)
+	sw $t6, 8($t0)
 	
 	lw $t4, 0($t2)				# load up platformC's (x, y)		
 	lw $t5, 4($t2)
+	lw $t6, 8($t2)
 	
 	sw $t4, 0($t1)				# platformB = platformC
 	sw $t5, 4($t1)
+	sw $t6, 8($t1)
 	
 	lw $t4, 0($t3)				# load up platformD's (x, y)		
 	lw $t5, 4($t3)
+	lw $t6, 8($t3)
 	
 	sw $t4, 0($t2)				# platformC = platformD
 	sw $t5, 4($t2)
+	sw $t6, 8($t2)
 	
 	li $t4, -1
 	sw $t4, 4($t3)				# set platformD's y-value to -1
 	
 	move $a0, $t3				# pass platformD as argument
 	jal randomizeX				# randomize platformD's x-value
+	
+	la $t3, platformD			# $t3 = platformD
+	move $a0, $t3				# pass platformD as argument
+	jal randomizeType			# randomize platformD's platform type
 	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
@@ -749,6 +869,17 @@ drawPlatform:
 	lw $t6, displayAddress			# $t6 = displayAddress
 	lw $t7, displayUnits			# $t7 = displayUnits
 	
+	lw $t8, 8($t1)
+	
+	beq $t8, -2, endDrawPlatform
+	
+	beqz $t8, calculatePos
+	lw $t0, blue
+	
+	bne $t8, 2, calculatePos
+	lw $t0, red
+	
+calculatePos:
 	# calculations for starting pixel
 	mult $t5, $t7
 	mflo $t8
