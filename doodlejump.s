@@ -846,6 +846,7 @@ drawPlayer:
 checkOutOfScreen1:
 	bne $s0, 30, checkOutOfScreen2
 	sw $t0, 4($t3)
+	sw $t0, -124($t3)
 	sw $t0, -120($t3)
 	sw $t0, 8($t3)
 	j endDrawPlayer
@@ -853,12 +854,14 @@ checkOutOfScreen1:
 checkOutOfScreen2:
 	bne $s0, 31, drawIfNotOutOfScreen
 	sw $t0, -124($t3)
+	sw $t0, -252($t3)
 	sw $t0, -120($t3)
 	sw $t0, 8($t3)
 	j endDrawPlayer
 
 drawIfNotOutOfScreen:
 	sw $t0, 4($t3)
+	sw $t0, -124($t3)
 	sw $t0, 8($t3)
 	sw $t0, 136($t3)
 	
@@ -952,22 +955,22 @@ drawDynamicText:
 	sw $ra, 0($sp)				# push address
 	
 checkDrawCool:
-	bne $s5, 0, checkDrawPog		# random number == 0 means to draw cool
+	bne $s5, 0, checkDrawHot		# random number == 0 means to draw cool
 	jal drawCool
 	j endDrawDynamicText
 
-checkDrawPog:
-	bne $s5, 1, checkDrawWow		# random number == 1 means to draw pog
-	jal drawPog
+checkDrawHot:
+	bne $s5, 1, checkDrawWow		# random number == 1 means to draw hot
+	jal drawHot
 	j endDrawDynamicText
 
 checkDrawWow:
-	bne $s5, 2, checkDrawHot		# random number == 2 means to draw wow
+	bne $s5, 2, checkDrawPoggers		# random number == 2 means to draw wow
 	jal drawWow
 	j endDrawDynamicText
 	
-checkDrawHot:					# random number == 3 means to draw hot
-	jal drawHot
+checkDrawPoggers:				# random number == 3 means to draw poggers
+	jal drawPoggers
 	j endDrawDynamicText
 
 endDrawDynamicText:
@@ -984,23 +987,23 @@ drawCool:
 	lw $t0, blue
 	sw $t0, textColour
 	
-	li $a0, 132
+	li $a0, 3332
 	la $a1, charC
 	jal drawChar
 	
-	li $a0, 148
+	li $a0, 3348
 	la $a1, charO
 	jal drawChar
 	
-	li $a0, 164
+	li $a0, 3364
 	la $a1, charO
 	jal drawChar
 	
-	li $a0, 180
+	li $a0, 3380
 	la $a1, charL
 	jal drawChar
 	
-	li $a0, 196
+	li $a0, 3396
 	la $a1, exclamation
 	jal drawChar
 	
@@ -1008,72 +1011,6 @@ drawCool:
 	sw $t0, textColour
 	
 endDrawCool:
-	lw $ra, 0($sp)				# pop address
-	addi $sp, $sp, 4			# move stack pointer up
-	
-	jr $ra
-	
-# drawPog -> draws pog on the screen
-drawPog:
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $ra, 0($sp)				# push address
-	
-	lw $t0, pink
-	sw $t0, textColour
-	
-	li $a0, 132
-	la $a1, charP
-	jal drawChar
-	
-	li $a0, 148
-	la $a1, charO
-	jal drawChar
-	
-	li $a0, 164
-	la $a1, charG
-	jal drawChar
-	
-	li $a0, 180
-	la $a1, exclamation
-	jal drawChar
-	
-	lw $t0, yellow
-	sw $t0, textColour
-	
-endDrawPog:
-	lw $ra, 0($sp)				# pop address
-	addi $sp, $sp, 4			# move stack pointer up
-	
-	jr $ra
-	
-# drawWow -> draws wow on the screen
-drawWow:
-	addi $sp, $sp, -4			# move stack pointer down
-	sw $ra, 0($sp)				# push address
-	
-	lw $t0, white
-	sw $t0, textColour
-	
-	li $a0, 132
-	la $a1, charW
-	jal drawChar
-	
-	li $a0, 148
-	la $a1, charO
-	jal drawChar
-	
-	li $a0, 164
-	la $a1, charW
-	jal drawChar
-	
-	li $a0, 180
-	la $a1, exclamation
-	jal drawChar
-	
-	lw $t0, yellow
-	sw $t0, textColour
-	
-endDrawWow:	
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
@@ -1087,19 +1024,19 @@ drawHot:
 	lw $t0, red
 	sw $t0, textColour
 	
-	li $a0, 132
+	li $a0, 3332
 	la $a1, charH
 	jal drawChar
 	
-	li $a0, 148
+	li $a0, 3348
 	la $a1, charO
 	jal drawChar
 	
-	li $a0, 164
+	li $a0, 3364
 	la $a1, charT
 	jal drawChar
 	
-	li $a0, 180
+	li $a0, 3380
 	la $a1, exclamation
 	jal drawChar
 	
@@ -1107,6 +1044,88 @@ drawHot:
 	sw $t0, textColour
 	
 endDrawHot:	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawWow -> draws wow on the screen
+drawWow:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, white
+	sw $t0, textColour
+	
+	li $a0, 3332
+	la $a1, charW
+	jal drawChar
+	
+	li $a0, 3348
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 3364
+	la $a1, charW
+	jal drawChar
+	
+	li $a0, 3380
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawWow:	
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawPoggers -> draws poggers on the screen
+drawPoggers:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, pink
+	sw $t0, textColour
+	
+	li $a0, 3332
+	la $a1, charP
+	jal drawChar
+	
+	li $a0, 3348
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 3364
+	la $a1, charG
+	jal drawChar
+	
+	li $a0, 3380
+	la $a1, charG
+	jal drawChar
+	
+	li $a0, 3396
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 3412
+	la $a1, charR
+	jal drawChar
+	
+	li $a0, 3428
+	la $a1, charS
+	jal drawChar
+	
+	li $a0, 3444
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawPog:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
