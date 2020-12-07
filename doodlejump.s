@@ -557,11 +557,33 @@ checkCollision:
 	add $t2, $t2, $t1			# $t2 = platform.x + platformSize (max-x)
 	lw $t3, 4($t0)				# $t3 = platform.y
 	addi $t3, $t3, -2			# $t3 = platform.y - 2 (to compare with player height)
-	addi $t4, $s0, 2			# $t4 = player.x + 2 (right side of player)
-	blt $t4, $t1, endCheckCollision		# if (player.x + 2 < platform.x) then terminate
-	bge $s0, $t2, endCheckCollision		# if (player.x >= platform.x + platformSize) then terminate
+	move $t4, $s0				# $t4 = player.x (min player.x)
+	addi $t5, $s0, 2			# $t5 = player.x + 2 (max player.x)
+	
+checkPlayerOutOfScreen1:
+	bne $t5, 32, checkPlayerOutOfScreen2
+	li $t5, 0
+	j checkPlayerY
+	
+checkPlayerOutOfScreen2:
+	bne $t5, 33, checkPlayerY
+	li $t5, 1
+	j checkPlayerY
+
+checkPlayerY:
 	bne $s1, $t3, endCheckCollision		# if (player.y != platform.y - 2) then terminate
+
+checkMinPlayerX:
+	blt $t4, $t1, checkMaxPlayerX
+	bge $t4, $t2, checkMaxPlayerX
 	li $s2, -1				# change player direction to go upwards
+	j endCheckCollision
+	
+checkMaxPlayerX:
+	blt $t5, $t1, endCheckCollision
+	bge $t5, $t2, endCheckCollision
+	li $s2, -1				# change player direction to go upwards
+	j endCheckCollision
 	
 endCheckCollision:
 	jr $ra
@@ -692,9 +714,25 @@ drawPlayer:
 	add $t3, $t3, $t1			# $t3 = displayAddress + (y * displayUnits + x) * 4
 	
 	sw $t0, 0($t3)				# draw pixel at unit
+	sw $t0, 128($t3)
+	
+checkOutOfScreen1:
+	bne $s0, 30, checkOutOfScreen2
+	sw $t0, 4($t3)
+	sw $t0, -120($t3)
+	sw $t0, 8($t3)
+	j endDrawPlayer
+	
+checkOutOfScreen2:
+	bne $s0, 31, drawIfNotOutOfScreen
+	sw $t0, -124($t3)
+	sw $t0, -120($t3)
+	sw $t0, 8($t3)
+	j endDrawPlayer
+
+drawIfNotOutOfScreen:
 	sw $t0, 4($t3)
 	sw $t0, 8($t3)
-	sw $t0, 128($t3)
 	sw $t0, 136($t3)
 	
 endDrawPlayer:
