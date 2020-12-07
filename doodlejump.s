@@ -18,12 +18,13 @@
 # - Milestone 2 complete: finished (a) and (b)
 # - Milestone 3 complete: finished (a) and (b)
 # - Milestone 4 complete (at least two): finished two objectives (a) and (b)
-# - Milestone 5 not complete (at least three): finished only two objectives (d) and (e)
+# - Milestone 5 complete (at least three): finished three objectives (b), (d), and (e)
 #
 # Which approved additional features have been implemented?
 # (See the assignment handout for the list of additional features)
-# 1. Added start / game over / pause screens with updated graphics (d)
-# 2. Added dynamic on-screen notifications (e)
+# 1. Added more platform types, specifically moving platforms and breaking platforms (two hits)
+# 2. Added start / game over / pause screens with updated graphics (d)
+# 3. Added dynamic on-screen notifications (e)
 #
 # Link to video demonstration for final submission:
 # - (insert YouTube / MyMedia / other URL here).
@@ -253,7 +254,7 @@ endOfScroll:
 # --------------------------------------------------
 
 movePlayer:
-	add $s1, $s1, $s2
+	add $s1, $s1, $s2			# increment player
 
 updatePlayerJumpCounter:
 	jal updateJumpCounter
@@ -286,11 +287,11 @@ updatePlatforms:
 updatePlatformA:
 	la $a0, platformA
 	lw $t0, 8($a0)
-	beqz $t0, updatePlatformB
-	beq $t0, -2, updatePlatformB
-	beq $t0, 2, updatePlatformB
-	beq $t0, 3, updatePlatformB
-	jal movePlatform
+	beqz $t0, updatePlatformB		# platform.type == 0 means it is normal
+	beq $t0, -2, updatePlatformB		# platform.type == -2 means it is broken
+	beq $t0, 2, updatePlatformB		# platform.type == 2 means it has two hits
+	beq $t0, 3, updatePlatformB		# platform.type == 3 means it has one hit
+	jal movePlatform			# platform.type == 1 or platform.type == -1 means that it moves in that direction
 
 updatePlatformB:
 	la $a0, platformB
@@ -646,12 +647,12 @@ checkCollision:
 	addi $t5, $s0, 2			# $t5 = player.x + 2 (max player.x)
 	
 checkPlayerOutOfScreen1:
-	bne $t5, 32, checkPlayerOutOfScreen2
+	bne $t5, 32, checkPlayerOutOfScreen2	# if player.x extends 1 unit off screen, make $t5 = 0
 	li $t5, 0
 	j checkPlayerY
 	
 checkPlayerOutOfScreen2:
-	bne $t5, 33, checkPlayerY
+	bne $t5, 33, checkPlayerY		# if player.x extends 2 units off screen, make $t5 = 1
 	li $t5, 1
 	j checkPlayerY
 
@@ -659,33 +660,32 @@ checkPlayerY:
 	bne $s1, $t3, endCheckCollision		# if (player.y != platform.y - 2) then terminate
 
 checkMinPlayerX:
-	blt $t4, $t1, checkMaxPlayerX
+	blt $t4, $t1, checkMaxPlayerX		# verify that min player.x is within platform bounds
 	bge $t4, $t2, checkMaxPlayerX
 	li $s2, -1				# change player direction to go upwards
 	j checkCollisionBreak
 	
 checkMaxPlayerX:
-	blt $t5, $t1, endCheckCollision
+	blt $t5, $t1, endCheckCollision		# verify that max player.x is within platform bounds
 	bge $t5, $t2, endCheckCollision
 	li $s2, -1				# change player direction to go upwards
-	
 	j checkCollisionBreak
 	
 checkCollisionBreak:
-	lw $t6, 8($t0)
+	lw $t6, 8($t0)				# load up platform.type
 
 checkFirstCollisionBreak:
-	bne $t6, 2, checkSecondCollisionBreak
+	bne $t6, 2, checkSecondCollisionBreak	# if platform.type == 2 then tag it as one hit left
 	li $t7, 3
 	sw $t7, 8($t0)
+	j endCheckCollision
 	
 checkSecondCollisionBreak:
-	bne $t6, 3, endCheckCollision
+	bne $t6, 3, endCheckCollision		# if platform.type == 3 then break the platform
 	li $t7, -2
-	sw $t7, 8($t0)
+	sw $t7, 8($t0)				# set platform.type = -2 (as in broken)
 	li $t8, -9999
-	sw $t8, 4($t0)
-	
+	sw $t8, 4($t0)				# set platform.y = -9999 (so it does not affect collision)
 	j endCheckCollision
 	
 endCheckCollision:
@@ -876,20 +876,21 @@ drawPlatform:
 	lw $t6, displayAddress			# $t6 = displayAddress
 	lw $t7, displayUnits			# $t7 = displayUnits
 	
-	lw $t8, 8($t1)
+	lw $t8, 8($t1)				# load up platform type
 	
+checkPlatformBroken:				# if platform.type == -2 then it is broken, so do not draw
 	beq $t8, -2, endDrawPlatform
 	
 drawBluePlatform:
-	beqz $t8, drawPinkPlatform
+	beqz $t8, drawPinkPlatform		# if platform.type != 0 then draw blue initially
 	lw $t0, blue
 	
 drawPinkPlatform:
-	bne $t8, 2, drawDarkPinkPlatform
+	bne $t8, 2, drawDarkPinkPlatform	# if platform.type == 2 then draw pink
 	lw $t0, pink
 	
 drawDarkPinkPlatform:
-	bne $t8, 3, calculatePos
+	bne $t8, 3, calculatePos		# if platform.type == 3 then draw darkpink
 	lw $t0, darkpink
 	
 calculatePos:
@@ -951,21 +952,21 @@ drawDynamicText:
 	sw $ra, 0($sp)				# push address
 	
 checkDrawCool:
-	bne $s5, 0, checkDrawPog
+	bne $s5, 0, checkDrawPog		# random number == 0 means to draw cool
 	jal drawCool
 	j endDrawDynamicText
 
 checkDrawPog:
-	bne $s5, 1, checkDrawWow
+	bne $s5, 1, checkDrawWow		# random number == 1 means to draw pog
 	jal drawPog
 	j endDrawDynamicText
 
 checkDrawWow:
-	bne $s5, 2, checkDrawHot
+	bne $s5, 2, checkDrawHot		# random number == 2 means to draw wow
 	jal drawWow
 	j endDrawDynamicText
 	
-checkDrawHot:
+checkDrawHot:					# random number == 3 means to draw hot
 	jal drawHot
 	j endDrawDynamicText
 
