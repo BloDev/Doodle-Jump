@@ -90,7 +90,8 @@ bar: .word -1, 4, -1, -1, 132, -1, -1, 260, -1, -1, 388, -1, -1, 516, -1
 white: .word 0xffffff
 red: .word 0xff0000
 green: .word 0x00ff00
-blue: .word 0x87ceeb
+lightblue: .word 0x87ceeb
+blue: .word 0x0000ff
 yellow: .word 0xffff00
 orange: .word 0xffa500
 pink: .word 0xffc0cb
@@ -214,7 +215,7 @@ checkIfScoreIsNotZero:
 	
 	li $v0, 42				# generates a random integer within a given range
 	li $a0, 0				# using only one random number generator
-	li $a1, 4				# random integer ranges from 0 to 4 (exclusive)
+	li $a1, 6				# random integer ranges from 0 to 6 (exclusive)
 	syscall
 	move $s5, $a0
 	
@@ -886,7 +887,7 @@ checkPlatformBroken:				# if platform.type == -2 then it is broken, so do not dr
 	
 drawBluePlatform:
 	beqz $t8, drawPinkPlatform		# if platform.type != 0 then draw blue initially
-	lw $t0, blue
+	lw $t0, lightblue
 	
 drawPinkPlatform:
 	bne $t8, 2, drawDarkPinkPlatform	# if platform.type == 2 then draw pink
@@ -969,8 +970,18 @@ checkDrawWow:
 	jal drawWow
 	j endDrawDynamicText
 	
-checkDrawPoggers:				# random number == 3 means to draw poggers
+checkDrawPoggers:
+	bne $s5, 3, checkDrawAwesome		# random number == 3 means to draw poggers
 	jal drawPoggers
+	j endDrawDynamicText
+	
+checkDrawAwesome:
+	bne $s5, 4, checkDrawAmazing		# random number == 4 means to draw awesome
+	jal drawAwesome
+	j endDrawDynamicText
+	
+checkDrawAmazing:				# random number == 5 means to draw amazing
+	jal drawAmazing
 	j endDrawDynamicText
 
 endDrawDynamicText:
@@ -1054,7 +1065,7 @@ drawWow:
 	addi $sp, $sp, -4			# move stack pointer down
 	sw $ra, 0($sp)				# push address
 	
-	lw $t0, white
+	lw $t0, yellow
 	sw $t0, textColour
 	
 	li $a0, 3332
@@ -1125,7 +1136,105 @@ drawPoggers:
 	lw $t0, yellow
 	sw $t0, textColour
 	
-endDrawPog:
+endDrawPoggers:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawAwesome -> draws awesome on the screen
+drawAwesome:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, orange
+	sw $t0, textColour
+	
+	li $a0, 3332
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 3348
+	la $a1, charW
+	jal drawChar
+	
+	li $a0, 3364
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 3380
+	la $a1, charS
+	jal drawChar
+	
+	li $a0, 3396
+	la $a1, charO
+	jal drawChar
+	
+	li $a0, 3412
+	la $a1, charM
+	jal drawChar
+	
+	li $a0, 3428
+	la $a1, charE
+	jal drawChar
+	
+	li $a0, 3444
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawAwesome:
+	lw $ra, 0($sp)				# pop address
+	addi $sp, $sp, 4			# move stack pointer up
+	
+	jr $ra
+	
+# drawAmazing -> draws amazing on the screen
+drawAmazing:
+	addi $sp, $sp, -4			# move stack pointer down
+	sw $ra, 0($sp)				# push address
+	
+	lw $t0, green
+	sw $t0, textColour
+	
+	li $a0, 3332
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 3348
+	la $a1, charM
+	jal drawChar
+	
+	li $a0, 3364
+	la $a1, charA
+	jal drawChar
+	
+	li $a0, 3380
+	la $a1, charZ
+	jal drawChar
+	
+	li $a0, 3396
+	la $a1, charI
+	jal drawChar
+	
+	li $a0, 3412
+	la $a1, charN
+	jal drawChar
+	
+	li $a0, 3428
+	la $a1, charG
+	jal drawChar
+	
+	li $a0, 3444
+	la $a1, exclamation
+	jal drawChar
+	
+	lw $t0, yellow
+	sw $t0, textColour
+	
+endDrawAmazing:
 	lw $ra, 0($sp)				# pop address
 	addi $sp, $sp, 4			# move stack pointer up
 	
