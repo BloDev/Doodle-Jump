@@ -93,6 +93,7 @@ blue: .word 0x87ceeb
 yellow: .word 0xffff00
 orange: .word 0xffa500
 pink: .word 0xffc0cb
+darkpink: .word 0xe75480
 
 # OBJECT COLOURS
 backgroundColour: .word 0x008080		# teal
@@ -285,33 +286,37 @@ updatePlatforms:
 updatePlatformA:
 	la $a0, platformA
 	lw $t0, 8($a0)
-	beq $t0, 2, updatePlatformB
-	beq $t0, -2, updatePlatformB
 	beqz $t0, updatePlatformB
+	beq $t0, -2, updatePlatformB
+	beq $t0, 2, updatePlatformB
+	beq $t0, 3, updatePlatformB
 	jal movePlatform
 
 updatePlatformB:
 	la $a0, platformB
 	lw $t0, 8($a0)
-	beq $t0, 2, updatePlatformC
-	beq $t0, -2, updatePlatformC
 	beqz $t0, updatePlatformC
+	beq $t0, -2, updatePlatformC
+	beq $t0, 2, updatePlatformC
+	beq $t0, 3, updatePlatformC
 	jal movePlatform
 
 updatePlatformC:
 	la $a0, platformC
 	lw $t0, 8($a0)
-	beq $t0, 2, updatePlatformD
-	beq $t0, -2, updatePlatformD
 	beqz $t0, updatePlatformD
+	beq $t0, -2, updatePlatformD
+	beq $t0, 2, updatePlatformD
+	beq $t0, 3, updatePlatformD
 	jal movePlatform
 
 updatePlatformD:
 	la $a0, platformD
 	lw $t0, 8($a0)
-	beq $t0, 2, endUpdatePlatforms
-	beq $t0, -2, endUpdatePlatforms
 	beqz $t0, endUpdatePlatforms
+	beq $t0, -2, endUpdatePlatforms
+	beq $t0, 2, endUpdatePlatforms
+	beq $t0, 3, endUpdatePlatforms
 	jal movePlatform
 
 endUpdatePlatforms:
@@ -657,23 +662,25 @@ checkMinPlayerX:
 	blt $t4, $t1, checkMaxPlayerX
 	bge $t4, $t2, checkMaxPlayerX
 	li $s2, -1				# change player direction to go upwards
-	
-	lw $t6, 8($t0)
-	bne $t6, 2, endCheckCollision
-	li $t7, -2
-	sw $t7, 8($t0)
-	li $t8, -9999
-	sw $t8, 4($t0)
-	
-	j endCheckCollision
+	j checkCollisionBreak
 	
 checkMaxPlayerX:
 	blt $t5, $t1, endCheckCollision
 	bge $t5, $t2, endCheckCollision
 	li $s2, -1				# change player direction to go upwards
 	
+	j checkCollisionBreak
+	
+checkCollisionBreak:
 	lw $t6, 8($t0)
-	bne $t6, 2, endCheckCollision
+
+checkFirstCollisionBreak:
+	bne $t6, 2, checkSecondCollisionBreak
+	li $t7, 3
+	sw $t7, 8($t0)
+	
+checkSecondCollisionBreak:
+	bne $t6, 3, endCheckCollision
 	li $t7, -2
 	sw $t7, 8($t0)
 	li $t8, -9999
@@ -873,11 +880,17 @@ drawPlatform:
 	
 	beq $t8, -2, endDrawPlatform
 	
-	beqz $t8, calculatePos
+drawBluePlatform:
+	beqz $t8, drawPinkPlatform
 	lw $t0, blue
 	
-	bne $t8, 2, calculatePos
-	lw $t0, red
+drawPinkPlatform:
+	bne $t8, 2, drawDarkPinkPlatform
+	lw $t0, pink
+	
+drawDarkPinkPlatform:
+	bne $t8, 3, calculatePos
+	lw $t0, darkpink
 	
 calculatePos:
 	# calculations for starting pixel
