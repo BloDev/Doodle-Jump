@@ -14,20 +14,22 @@
 #
 # Which milestone is reached in this submission?
 # (See the assignment handout for descriptions of the milestones)
-# - Milestone 1 complete: finished (a) and (b)
-# - Milestone 2 complete: finished (a) and (b)
-# - Milestone 3 complete: finished (a) and (b)
-# - Milestone 4 complete (at least two): finished two objectives (a) and (b)
-# - Milestone 5 complete (at least three): finished three objectives (b), (d), and (e)
+# - Milestone 1 complete: finished (1.a) and (1.b)
+# - Milestone 2 complete: finished (2.a) and (2.b)
+# - Milestone 3 complete: finished (3.a) and (3.b)
+# - Milestone 4 complete (at least two): finished two objectives (4.a) and (4.b)
+# - Milestone 5 complete (at least three): finished three objectives (5.b), (5.d), and (5.e)
 #
 # Which approved additional features have been implemented?
 # (See the assignment handout for the list of additional features)
-# 1. Added more platform types, specifically moving platforms and breaking platforms (two hits)
-# 2. Added start / game over / pause screens with updated graphics (d)
-# 3. Added dynamic on-screen notifications (e)
+# 1. Added score counter (4.a)
+# 2. Added different levels (4.b)
+# 3. Added more platform types, specifically moving platforms and breaking platforms (two hits) (5.b)
+# 4. Added start / game over / pause screens with updated graphics (5.d)
+# 5. Added dynamic on-screen notifications (5.e)
 #
 # Link to video demonstration for final submission:
-# - (insert YouTube / MyMedia / other URL here).
+# - https://www.youtube.com/watch?v=3_Xi4JB8Dpk
 #
 # Any additional information that the TA needs to know:
 # - Left Key: j
@@ -499,25 +501,25 @@ checkLevelOne:
 	lw $t1, levelOneKey			# $t1 = levelOneKey
 	bne $t0, $t1, checkLevelTwo		# if (input != levelOneKey) then keep checking for a keypress
 	li $t2, 12
-	sw $t2, platformSize
+	sw $t2, platformSize			# change platformSize
 	j endCheckLevelKeypress
 	
 checkLevelTwo:
 	lw $t1, levelTwoKey			# $t1 = levelTwoKey
 	bne $t0, $t1, checkLevelThree		# if (input != levelTwoKey) then keep checking for a keypress
 	li $t2, 10
-	sw $t2, platformSize
+	sw $t2, platformSize			# change platformSize
 	li $t2, 10
-	sw $t2, startPlatformX
+	sw $t2, startPlatformX			# change startPlatformX
 	j endCheckLevelKeypress
 	
 checkLevelThree:
 	lw $t1, levelThreeKey			# $t1 = levelThreeKey
 	bne $t0, $t1, checkLevelKeypress	# if (input != levelThreeKey) then keep checking for a keypress
 	li $t2, 8
-	sw $t2, platformSize
+	sw $t2, platformSize			# change platformSize
 	li $t2, 12
-	sw $t2, startPlatformX
+	sw $t2, startPlatformX			# change startPlatformX
 	j endCheckLevelKeypress
 
 endCheckLevelKeypress:
@@ -845,7 +847,7 @@ drawPlayer:
 	sw $t0, 128($t3)
 	
 checkOutOfScreen1:
-	bne $s0, 30, checkOutOfScreen2
+	bne $s0, 30, checkOutOfScreen2		# draw one side of player on left side of screen
 	sw $t0, 4($t3)
 	sw $t0, -124($t3)
 	sw $t0, -120($t3)
@@ -853,7 +855,7 @@ checkOutOfScreen1:
 	j endDrawPlayer
 	
 checkOutOfScreen2:
-	bne $s0, 31, drawIfNotOutOfScreen
+	bne $s0, 31, drawIfNotOutOfScreen	# draw two sides of player on left side of screen
 	sw $t0, -124($t3)
 	sw $t0, -252($t3)
 	sw $t0, -120($t3)
@@ -917,9 +919,9 @@ drawPlatformLoop:				# if (i < platformSize)
 	j drawPlatformLoop			# loop
 	
 drawPlatformSupportInit:
-	li $t2, 0
-	addi $t3, $t3, -4
-	addi $t0, $t0, 16
+	li $t2, 0				# i = 0
+	addi $t3, $t3, -4			# platformSize = platformSize - 4
+	addi $t0, $t0, 16			# offset 16 to colour (for a different shade)
 
 drawPlatformSupportLoop:
 	bge $t2, $t3, endDrawPlatform		# if (i >= platformSize - 4) then exit loop
